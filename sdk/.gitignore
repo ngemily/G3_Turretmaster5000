@@ -2,3 +2,4 @@
 RemoteSystemsTempFiles/
 *.hdf
 *hw_platform*/
+webtalk/

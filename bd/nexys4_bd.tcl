@@ -1,6 +1,6 @@
 
 ################################################################
-# This is a generated script based on design: microblaze
+# This is a generated script based on design: nexys4_bd
 #
 # Though there are limitations about the generated script,
 # the main purpose of this utility is to make learning
@@ -25,12 +25,11 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source microblaze_script.tcl
+# source nexys4_bd_script.tcl
 
 # If you do not already have a project created,
 # you can create a project using the following command:
 #    create_project project_1 myproj -part xc7a100tcsg324-1
-#    set_property BOARD_PART digilentinc.com:nexys4_ddr:part0:1.1 [current_project]
 
 # CHECKING IF PROJECT EXISTS
 if { [get_projects -quiet] eq "" } {
@@ -228,6 +227,8 @@ proc create_root_design { parentCell } {
   set SD_SS [ create_bd_port -dir O -from 0 -to 0 SD_SS ]
   set reset [ create_bd_port -dir I -type rst reset ]
   set_property -dict [ list CONFIG.POLARITY {ACTIVE_LOW}  ] $reset
+  set reset_1 [ create_bd_port -dir I -type rst reset_1 ]
+  set_property -dict [ list CONFIG.POLARITY {ACTIVE_HIGH}  ] $reset_1
   set sys_clock [ create_bd_port -dir I -type clk sys_clock ]
   set_property -dict [ list CONFIG.FREQ_HZ {100000000} CONFIG.PHASE {0.000}  ] $sys_clock
 
@@ -237,15 +238,15 @@ proc create_root_design { parentCell } {
 
   # Create instance: axi_uartlite_0, and set properties
   set axi_uartlite_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_uartlite:2.0 axi_uartlite_0 ]
-  set_property -dict [ list CONFIG.UARTLITE_BOARD_INTERFACE {usb_uart} CONFIG.USE_BOARD_FLOW {true}  ] $axi_uartlite_0
+  set_property -dict [ list CONFIG.UARTLITE_BOARD_INTERFACE {Custom} CONFIG.USE_BOARD_FLOW {false}  ] $axi_uartlite_0
 
   # Create instance: card_present, and set properties
   set card_present [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 card_present ]
-  set_property -dict [ list CONFIG.C_ALL_INPUTS {1} CONFIG.C_GPIO_WIDTH {16} CONFIG.C_INTERRUPT_PRESENT {1} CONFIG.GPIO_BOARD_INTERFACE {dip_switches_16bits} CONFIG.USE_BOARD_FLOW {true}  ] $card_present
+  set_property -dict [ list CONFIG.C_ALL_INPUTS {1} CONFIG.C_GPIO_WIDTH {16} CONFIG.C_INTERRUPT_PRESENT {1} CONFIG.GPIO_BOARD_INTERFACE {Custom} CONFIG.USE_BOARD_FLOW {true}  ] $card_present
 
   # Create instance: clk_wiz_1, and set properties
   set clk_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.1 clk_wiz_1 ]
-  set_property -dict [ list CONFIG.CLKOUT1_JITTER {130.958} CONFIG.CLKOUT1_PHASE_ERROR {98.575} CONFIG.CLKOUT2_JITTER {209.588} CONFIG.CLKOUT2_PHASE_ERROR {98.575} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {10} CONFIG.CLKOUT2_USED {true} CONFIG.CLK_IN1_BOARD_INTERFACE {sys_clock} CONFIG.MMCM_CLKFBOUT_MULT_F {10.000} CONFIG.MMCM_CLKIN1_PERIOD {10.0} CONFIG.MMCM_CLKOUT0_DIVIDE_F {10.000} CONFIG.MMCM_CLKOUT1_DIVIDE {100} CONFIG.MMCM_DIVCLK_DIVIDE {1} CONFIG.NUM_OUT_CLKS {2} CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} CONFIG.RESET_BOARD_INTERFACE {reset} CONFIG.RESET_PORT {resetn} CONFIG.RESET_TYPE {ACTIVE_LOW} CONFIG.USE_BOARD_FLOW {true}  ] $clk_wiz_1
+  set_property -dict [ list CONFIG.CLKOUT1_JITTER {130.958} CONFIG.CLKOUT1_PHASE_ERROR {98.575} CONFIG.CLKOUT2_JITTER {209.588} CONFIG.CLKOUT2_PHASE_ERROR {98.575} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {10} CONFIG.CLKOUT2_USED {true} CONFIG.CLK_IN1_BOARD_INTERFACE {Custom} CONFIG.MMCM_CLKFBOUT_MULT_F {10.000} CONFIG.MMCM_CLKIN1_PERIOD {10.0} CONFIG.MMCM_CLKOUT0_DIVIDE_F {10.000} CONFIG.MMCM_CLKOUT1_DIVIDE {100} CONFIG.MMCM_DIVCLK_DIVIDE {1} CONFIG.NUM_OUT_CLKS {2} CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} CONFIG.RESET_BOARD_INTERFACE {Custom} CONFIG.RESET_PORT {reset} CONFIG.RESET_TYPE {ACTIVE_HIGH} CONFIG.USE_BOARD_FLOW {false}  ] $clk_wiz_1
 
   # Create instance: mdm_1, and set properties
   set mdm_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm:3.2 mdm_1 ]
@@ -271,7 +272,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: rst_clk_wiz_1_100M, and set properties
   set rst_clk_wiz_1_100M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_clk_wiz_1_100M ]
-  set_property -dict [ list CONFIG.RESET_BOARD_INTERFACE {reset} CONFIG.USE_BOARD_FLOW {true}  ] $rst_clk_wiz_1_100M
+  set_property -dict [ list CONFIG.RESET_BOARD_INTERFACE {Custom} CONFIG.USE_BOARD_FLOW {false}  ] $rst_clk_wiz_1_100M
 
   # Create interface connections
   connect_bd_intf_net -intf_net axi_uartlite_0_UART [get_bd_intf_ports usb_uart] [get_bd_intf_pins axi_uartlite_0/UART]
@@ -299,7 +300,8 @@ proc create_root_design { parentCell } {
   connect_bd_net -net mdm_1_debug_sys_rst [get_bd_pins mdm_1/Debug_SYS_Rst] [get_bd_pins rst_clk_wiz_1_100M/mb_debug_sys_rst]
   connect_bd_net -net microblaze_0_Clk [get_bd_pins axi_quad_spi_0/s_axi_aclk] [get_bd_pins axi_uartlite_0/s_axi_aclk] [get_bd_pins card_present/s_axi_aclk] [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins microblaze_0/Clk] [get_bd_pins microblaze_0_axi_intc/processor_clk] [get_bd_pins microblaze_0_axi_intc/s_axi_aclk] [get_bd_pins microblaze_0_axi_periph/ACLK] [get_bd_pins microblaze_0_axi_periph/M00_ACLK] [get_bd_pins microblaze_0_axi_periph/M01_ACLK] [get_bd_pins microblaze_0_axi_periph/M02_ACLK] [get_bd_pins microblaze_0_axi_periph/M03_ACLK] [get_bd_pins microblaze_0_axi_periph/S00_ACLK] [get_bd_pins microblaze_0_local_memory/LMB_Clk] [get_bd_pins rst_clk_wiz_1_100M/slowest_sync_clk]
   connect_bd_net -net microblaze_0_intr [get_bd_pins microblaze_0_axi_intc/intr] [get_bd_pins microblaze_0_xlconcat/dout]
-  connect_bd_net -net reset_1 [get_bd_ports reset] [get_bd_pins clk_wiz_1/resetn] [get_bd_pins rst_clk_wiz_1_100M/ext_reset_in]
+  connect_bd_net -net reset_1 [get_bd_ports reset] [get_bd_pins rst_clk_wiz_1_100M/ext_reset_in]
+  connect_bd_net -net reset_1_1 [get_bd_ports reset_1] [get_bd_pins clk_wiz_1/reset]
   connect_bd_net -net rst_clk_wiz_1_100M_bus_struct_reset [get_bd_pins microblaze_0_local_memory/SYS_Rst] [get_bd_pins rst_clk_wiz_1_100M/bus_struct_reset]
   connect_bd_net -net rst_clk_wiz_1_100M_interconnect_aresetn [get_bd_pins microblaze_0_axi_periph/ARESETN] [get_bd_pins rst_clk_wiz_1_100M/interconnect_aresetn]
   connect_bd_net -net rst_clk_wiz_1_100M_mb_reset [get_bd_pins microblaze_0/Reset] [get_bd_pins microblaze_0_axi_intc/processor_rst] [get_bd_pins rst_clk_wiz_1_100M/mb_reset]
