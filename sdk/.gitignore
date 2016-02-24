@@ -1,0 +1,4 @@
+\.metadata/
+RemoteSystemsTempFiles/
+*.hdf
+*hw_platform*/
