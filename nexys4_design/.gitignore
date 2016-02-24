@@ -1,0 +1,5 @@
+*\.srcs/
+*\.cache/
+*\.runs/
+*\.sdk/
+*\.hw/
