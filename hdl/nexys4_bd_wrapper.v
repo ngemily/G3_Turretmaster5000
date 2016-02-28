@@ -10,7 +10,8 @@
 `timescale 1 ps / 1 ps
 
 module nexys4_bd_wrapper
-   (SD_MISO,
+   (JA,
+    SD_MISO,
     SD_MOSI,
     SD_SCK,
     SD_SS,
@@ -20,6 +21,7 @@ module nexys4_bd_wrapper
     sys_clock,
     usb_uart_rxd,
     usb_uart_txd);
+  output [3:1] JA;
   input SD_MISO;
   output SD_MOSI;
   output SD_SCK;
@@ -30,7 +32,8 @@ module nexys4_bd_wrapper
   input sys_clock;
   input usb_uart_rxd;
   output usb_uart_txd;
-
+  
+  wire [3:1] JA;
   wire SD_MISO;
   wire SD_MOSI;
   wire SD_SCK;
@@ -46,7 +49,8 @@ module nexys4_bd_wrapper
   assign sd_cd_tri_i[0] = sd_inserted;
 
   nexys4_bd nexys4_bd_i
-       (.SD_CD_tri_i(sd_cd_tri_i),
+       (.JA(JA),
+        .SD_CD_tri_i(sd_cd_tri_i),
         .SD_MISO(SD_MISO),
         .SD_MOSI(SD_MOSI),
         .SD_SCK(SD_SCK),

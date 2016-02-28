@@ -54,4 +54,10 @@ BEGIN DRIVER
  PARAMETER HW_INSTANCE = microblaze_0_local_memory_ilmb_bram_if_cntlr
 END
 
+BEGIN DRIVER
+ PARAMETER DRIVER_NAME = driver_board_ip
+ PARAMETER DRIVER_VER = 1.0
+ PARAMETER HW_INSTANCE = driver_board_ip_0
+END
+
 

@@ -18,6 +18,8 @@ set obj [get_projects turretmaster]
 set_property "default_lib" "xil_defaultlib" $obj
 set_property "simulator_language" "Mixed" $obj
 
+# Add our custom IP repo.
+set_property  ip_repo_paths  "$origin_dir/ip_repo" [current_project]
 
 # Create 'sources_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sources_1] ""]} {

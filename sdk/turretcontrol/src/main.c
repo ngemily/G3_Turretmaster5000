@@ -16,6 +16,7 @@
 #include "platform.h"
 #include "diskio.h"
 #include "ff.h"
+#include "motorcontrol.h"
 
 
 // Function Declarations
@@ -25,6 +26,9 @@ bool SdCardInserted();
 
 static void LowLevelTest();
 static void HighLevelTest();
+
+static void LaserTest();
+static void MotorPatternTest();
 
 /*
  * The instances to support the device drivers are global such that the
@@ -86,8 +90,9 @@ int main() {
 	MB_Sleep(500);
 
     //LowLevelTest();
-    HighLevelTest();
+    //HighLevelTest();
 
+	MotorPatternTest();
 
 
     while(1);
@@ -173,6 +178,7 @@ static void LowLevelTest() {
   	}
 }
 
+
 static void HighLevelTest() {
 	FATFS FatFs;
 	FIL FHandle;
@@ -217,4 +223,55 @@ static void HighLevelTest() {
 	f_close(&FHandle);
 
 	xil_printf("Test Successful!\n\r");
+}
+
+
+static void LaserTest() {
+	InitMotorBoard();
+
+	while (true) {
+		TurnOnLaser();
+		MB_Sleep(1000);
+		TurnOffLaser();
+		MB_Sleep(1000);
+	}
+}
+
+
+static void MotorPatternTest() {
+	InitMotorBoard();
+	TurnOnLaser();
+	EnablePanServo();
+	EnableTiltServo();
+
+	while (true) {
+		for (int i = -60; i < 0; i++) {
+			SetPanAngle(i);
+			SetTiltAngle(i + 60);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+		for (int i = 0; i < 60; i++) {
+			SetPanAngle(i);
+			SetTiltAngle(60 - i);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+		for (int i = 60; i > 0; i--) {
+			SetPanAngle(i);
+			SetTiltAngle(i - 60);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+		for (int i = 0; i > -60; i--) {
+			SetPanAngle(i);
+			SetTiltAngle(-60 - i);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+	}
 }
