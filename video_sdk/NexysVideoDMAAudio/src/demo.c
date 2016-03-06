@@ -139,7 +139,7 @@ volatile int numInterrupts;
  };
 
  void test_fcn(void) {
-	 xil_printf("test\n\r");
+	 xil_printf("test %08x\n\r", 0x123ABC);
  }
 
  static bool do_run = true;

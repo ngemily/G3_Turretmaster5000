@@ -16,6 +16,7 @@
 #define SD_GPIO_CARD_PRESENT_MASK (0x00000001)
 #define SD_GPIO_DEVICE_ID   XPAR_GPIO_0_DEVICE_ID
 #define INTC_DEVICE_ID		XPAR_INTC_0_DEVICE_ID
+#define SD_GPIO_CHANNEL	    1
 
 
 extern XIntc InterruptController;

@@ -4,7 +4,6 @@
 	<comment></comment>
 	<projects>
 		<project>turretmaster_bsp</project>
-		<project>turretcontrol_bsp</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

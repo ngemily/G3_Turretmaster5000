@@ -51,7 +51,7 @@ int SetupSdGpio() {
 	}
 
 	// Set the direction for all signals to be inputs.
-	XGpio_SetDataDirection(&SdGpio, 1, SD_GPIO_CARD_PRESENT_MASK);
+	XGpio_SetDataDirection(&SdGpio, SD_GPIO_CHANNEL, SD_GPIO_CARD_PRESENT_MASK);
 
 	XGpio_SelfTest(&SdGpio);
 
@@ -94,7 +94,6 @@ int main() {
 	//LaserTest();
 	MotorPatternTest();
 
-
     while(1);
 
     cleanup_platform();
@@ -103,7 +102,7 @@ int main() {
 
 
 inline bool SdCardInserted() {
-    int RegRead = XGpio_DiscreteRead(&SdGpio, 1);
+    int RegRead = XGpio_DiscreteRead(&SdGpio, SD_GPIO_CHANNEL);
     return (RegRead & SD_GPIO_CARD_PRESENT_MASK) == 0;
 }
 
@@ -165,7 +164,7 @@ static void LowLevelTest() {
 
     xil_printf("SD card initialized.\n\r");
 
-  	if (disk_read(0, TestBuffer, 0, 2) != RES_OK) {
+  	if (disk_read(0, TestBuffer, 0, 4) != RES_OK) {
     	xil_printf("Failed to read first sector.\n\r");
     	return;
   	}
@@ -174,7 +173,7 @@ static void LowLevelTest() {
   		for (int j = 0; j < 4; j++) {
   			xil_printf("%02x ", TestBuffer[4 * i + j]);
   		}
-  		xil_printf("\r\n");
+  		xil_printf("\n\r");
   	}
 }
 
