@@ -10,14 +10,14 @@
 /*                                                                 */
 /*******************************************************************/
 
-_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : 0x400;
-_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0x400;
+_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : 0x800;
+_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0x800;
 
 /* Define Memories in the system */
 
 MEMORY
 {
-   microblaze_0_local_memory_ilmb_bram_if_cntlr_microblaze_0_local_memory_dlmb_bram_if_cntlr : ORIGIN = 0x50, LENGTH = 0xFFB0
+   microblaze_0_local_memory_ilmb_bram_if_cntlr_microblaze_0_local_memory_dlmb_bram_if_cntlr : ORIGIN = 0x00000050, LENGTH = 0x0003FFB0
    mig_7series_0 : ORIGIN = 0x80000000, LENGTH = 0x20000000
 }
 
@@ -29,19 +29,19 @@ ENTRY(_start)
 
 SECTIONS
 {
-.vectors.reset 0x0 : {
+.vectors.reset 0x00000000 : {
    KEEP (*(.vectors.reset))
 } 
 
-.vectors.sw_exception 0x8 : {
+.vectors.sw_exception 0x00000008 : {
    KEEP (*(.vectors.sw_exception))
 } 
 
-.vectors.interrupt 0x10 : {
+.vectors.interrupt 0x00000010 : {
    KEEP (*(.vectors.interrupt))
 } 
 
-.vectors.hw_exception 0x20 : {
+.vectors.hw_exception 0x00000020 : {
    KEEP (*(.vectors.hw_exception))
 } 
 

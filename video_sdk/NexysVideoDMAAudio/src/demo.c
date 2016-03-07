@@ -50,6 +50,9 @@
 #include "dma/dma.h"
 #include "intc/intc.h"
 #include "iic/iic.h"
+#include "diskio/diskio.h"
+#include "diskio/ff.h"
+#include "motorcontrol/motorcontrol.h"
 
 #include "platform.h"
 #include "audio_engine.h"
@@ -95,8 +98,10 @@
 
 #define TEST_START_VALUE	0x0
 
-#define GPIO_DEVICE_ID	XPAR_AXI_GPIO_0_DEVICE_ID
-#define BUTTON_INT_MASK XPAR_AXI_GPIO_0_IP2INTC_IRPT_MASK
+#define SD_GPIO_CARD_PRESENT_MASK (0x00000001)
+#define SD_GPIO_DEVICE_ID   XPAR_GPIO_0_DEVICE_ID
+#define INTC_DEVICE_ID		XPAR_INTC_0_DEVICE_ID
+#define SD_GPIO_CHANNEL	    1
 
 
 /**************************** Type Definitions *******************************/
@@ -109,6 +114,16 @@
 #if (!defined(DEBUG))
 extern void xil_printf(const char *format, ...);
 #endif
+
+static int SetupSdGpio();
+static bool SdCardInserted();
+
+static void LowLevelTest();
+static void HighLevelTest();
+
+static void LaserTest();
+static void MotorPatternTest();
+static void stopTest();
 
 
 /************************** Variable Definitions *****************************/
@@ -134,9 +149,10 @@ volatile int numInterrupts;
  	{XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_MM2S_INTROUT_INTR,   (XInterruptHandler)fnMM2SInterruptHandler, &sAxiDma},
  	//UART Lite Interrupt handler
  	{XPAR_MICROBLAZE_0_AXI_INTC_AXI_UARTLITE_0_INTERRUPT_INTR, (XInterruptHandler)XUartLite_InterruptHandler, &sUartLite},
-
- 	//{XPAR_MICROBLAZE_0_AXI_INTC_AXI_GPIO_0_IP2INTC_IRPT_INTR, (XInterruptHandler)XIntc_InterruptHandler, &sUartLite},
  };
+
+ static TCHAR Buff[100];
+ static volatile bool continueTest;
 
  void test_fcn(void) {
 	 xil_printf("test %08x\n\r", 0x123ABC);
@@ -156,67 +172,13 @@ volatile int numInterrupts;
  }
 
 
- inline void uart_rec_audio(void) {
+ void uart_rec_audio(void) {
 	 rec_audio();
  }
 
 
- inline void uart_play_audio(void) {
+ void uart_play_audio(void) {
 	 play_audio();
- }
-
-
- void GpioIsr(void *InstancePtr) {
-	XGpio *gpio = (XGpio *)InstancePtr;
-	XGpio_InterruptDisable(gpio, BUTTON_INT_MASK);
-
-	// Clear the interrupt such that it is no longer pending in the GPIO
-	XGpio_InterruptClear(gpio, BUTTON_INT_MASK);
-
-	xil_printf("GPIO interrupt!\r\n");
-
-	numInterrupts += 1;
-
-	// Enable the interrupt
-	XGpio_InterruptEnable(gpio, BUTTON_INT_MASK);
- }
-
-
- XStatus initGpio(XGpio *gpio) {
-	int status;
-
-	xil_printf("Initialize GPIO.");
-
-	/* Initialize the GPIO driver. If an error occurs then exit */
-
-	status = XGpio_Initialize(gpio, GPIO_DEVICE_ID);
-	if (status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-
-	/*
-	 * Perform a self-test on the GPIO.  This is a minimal test and only
-	 * verifies that there is not any bus error when reading the data
-	 * register
-	 */
-	XGpio_SelfTest(gpio);
-
-	XGpio_SetDataDirection(gpio, 1, ~0);
-
-	/* Hook up interrupt service routine */
-	XIntc_Connect(&sIntc, XPAR_INTC_0_GPIO_0_VEC_ID,
-		      (Xil_ExceptionHandler)GpioIsr, gpio);
-
-	/* Enable the interrupt vector at the interrupt controller */
-
-	XIntc_Enable(&sIntc, XPAR_INTC_0_GPIO_0_VEC_ID);
-
-	XGpio_InterruptEnable(gpio, BUTTON_INT_MASK);
-	XGpio_InterruptGlobalEnable(gpio);
-
-	numInterrupts = 0;
-
-	return XST_SUCCESS;
  }
 
 /*****************************************************************************/
@@ -248,7 +210,7 @@ int main(void)
 	status |= initialize_audio(&sIic, &sAxiDma);
 	status |= fnInitInterruptController(&sIntc);
 	status |= initialize_debug(&sUartLite);
-	status |= initGpio(&sGpio);
+	status |= SetupSdGpio(&sGpio);
 
 	if (status != XST_SUCCESS) {
 		xil_printf("Failed to initialize system.\r\n");
@@ -264,11 +226,19 @@ int main(void)
 	register_uart_response('e', end_fcn);
 	register_uart_response('d', dump_mem);
 
+	// Commands to run self-tests
+	register_uart_response('l', LowLevelTest);
+	register_uart_response('h', HighLevelTest);
+	register_uart_response('z', LaserTest);
+	register_uart_response('m', MotorPatternTest);
+	register_uart_response('s', stopTest);
+
+
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
+	xil_printf("%08x\r\n", 0xDEADBEEF);
 
 	while (do_run) {
 		MB_Sleep(1000);
-		xil_printf("int count: %d\r\n", numInterrupts);
 	}
 
 	xil_printf("\r\n--- Exiting main() --- \r\n");
@@ -277,9 +247,166 @@ int main(void)
 }
 
 
+/***************** Static Function Definitions *********************/
+
+static int SetupSdGpio(XGpio *sGpio) {
+	int Status;
+
+	// Initialize the GPIO driver. If an error occurs then exit.
+	Status = XGpio_Initialize(sGpio, SD_GPIO_DEVICE_ID);
+	if (Status != XST_SUCCESS) {
+		xil_printf("Failed to initialize SD GPIO driver: %d\n\r", Status);
+		return XST_FAILURE;
+	}
+
+	// Set the direction for all signals to be inputs.
+	XGpio_SetDataDirection(sGpio, SD_GPIO_CHANNEL, SD_GPIO_CARD_PRESENT_MASK);
+
+	XGpio_SelfTest(sGpio);
+
+	// TODO: add Interrupt configuration code.
+
+	return XST_SUCCESS;
+}
 
 
+static inline bool SdCardInserted() {
+    int RegRead = XGpio_DiscreteRead(&sGpio, SD_GPIO_CHANNEL);
+    return (RegRead & SD_GPIO_CARD_PRESENT_MASK) == 0;
+}
 
+
+static void LowLevelTest() {
+	u8 TestBuffer[2048];
+
+    // Try to initialize the SD card.
+    if (disk_initialize(0)) {
+    	xil_printf("Failed to initialize SD card.\n\r");
+    	return;
+    }
+
+    xil_printf("SD card initialized.\n\r");
+
+  	if (disk_read(0, TestBuffer, 0, 4) != RES_OK) {
+    	xil_printf("Failed to read first sector.\n\r");
+    	return;
+  	}
+
+  	for (int i = 0; i < 128; i++) {
+  		for (int j = 0; j < 4; j++) {
+  			xil_printf("%02x ", TestBuffer[4 * i + j]);
+  		}
+  		xil_printf("\n\r");
+  	}
+}
+
+
+static void HighLevelTest() {
+	FATFS FatFs;
+	FIL FHandle;
+	unsigned int BytesWritten;
+
+	if (f_mount(&FatFs, "", 0) != FR_OK) {
+    	xil_printf("Failed to mount filesystem.\n\r");
+    	return;
+	}
+
+	if (f_open(&FHandle, "foo.txt", FA_READ) != FR_OK) {
+    	xil_printf("Failed to open foo.txt.\n\r");
+		return;
+	}
+
+	while (!f_eof(&FHandle)) {
+		if (f_gets(Buff, 100, &FHandle) == NULL) {
+			xil_printf("Failed to read a line from foo.txt.\r\n");
+			return;
+		}
+
+		xil_printf("%s", Buff);
+	}
+
+	f_close(&FHandle);
+
+	if (f_open(&FHandle, "bar.txt", FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
+    	xil_printf("Failed to open bar.txt.\n\r");
+		return;
+	}
+
+	if (f_write(&FHandle, "Hello!\r\n", 8, &BytesWritten) != FR_OK) {
+    	xil_printf("Failed to write to bar.txt.\n\r");
+		return;
+	}
+
+	if (BytesWritten != 8) {
+		xil_printf("Wrote incorrect number of bytes to bar.txt!\n\r");
+		return;
+	}
+
+	f_close(&FHandle);
+
+	f_mount(NULL, "", 0);
+
+	xil_printf("Test Successful!\n\r");
+}
+
+
+static void LaserTest() {
+	InitMotorBoard();
+	continueTest = true;
+
+	while (continueTest) {
+		TurnOnLaser();
+		MB_Sleep(1000);
+		TurnOffLaser();
+		MB_Sleep(1000);
+	}
+}
+
+
+static void MotorPatternTest() {
+	InitMotorBoard();
+	TurnOnLaser();
+	EnablePanServo();
+	EnableTiltServo();
+
+	continueTest = true;
+
+	while (continueTest) {
+		for (int i = -60; i < 0; i++) {
+			SetPanAngle(i);
+			SetTiltAngle(i + 60);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+		for (int i = 0; i < 60; i++) {
+			SetPanAngle(i);
+			SetTiltAngle(60 - i);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+		for (int i = 60; i > 0; i--) {
+			SetPanAngle(i);
+			SetTiltAngle(i - 60);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+		for (int i = 0; i > -60; i--) {
+			SetPanAngle(i);
+			SetTiltAngle(-60 - i);
+			MB_Sleep(15);
+		}
+		MB_Sleep(20);
+
+	}
+}
+
+
+static void stopTest() {
+	continueTest = false;
+}
 
 
 
