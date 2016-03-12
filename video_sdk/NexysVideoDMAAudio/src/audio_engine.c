@@ -5,7 +5,6 @@
  *      Author: Roberto Bortolussi
  */
 
-
 #include <mb_interface.h>
 #include <xparameters.h>
 #include <xiic.h>
@@ -30,84 +29,68 @@ XIic    *sIicPtr;
 XAxiDma *sAxiDmaPtr;
 
 void finish_audio_task(void) {
-	Xil_Out32(I2S_STREAM_CONTROL_REG, 0x00000000);
-	Xil_Out32(I2S_TRANSFER_CONTROL_REG, 0x00000000);
-	microblaze_flush_dcache();
-	microblaze_invalidate_dcache();
-	if (audio_dma_error) {
-		audio_dma_error = 0;
-		print("\n\rAudio DMA Error\n\r");
-	}
-	print("Audio Task Complete\n\r");
-	audio_codec_busy = 0;
+    Xil_Out32(I2S_STREAM_CONTROL_REG, 0x00000000);
+    Xil_Out32(I2S_TRANSFER_CONTROL_REG, 0x00000000);
+    microblaze_flush_dcache();
+    microblaze_invalidate_dcache();
+    if (audio_dma_error) {
+        audio_dma_error = 0;
+        print("\n\rAudio DMA Error\n\r");
+    }
+    print("Audio Task Complete\n\r");
+    audio_codec_busy = 0;
 }
 
 XStatus initialize_audio(XIic *IicPtr, XAxiDma *AxiDmaPtr) {
-	print("Initializing Audio...\n\r");
+    print("Initializing Audio...\n\r");
 
-	sIicPtr    = IicPtr;
-	sAxiDmaPtr = AxiDmaPtr;
-	int status = XST_SUCCESS;
+    sIicPtr    = IicPtr;
+    sAxiDmaPtr = AxiDmaPtr;
+    int status = XST_SUCCESS;
 
-	if (XST_SUCCESS == status) {
-		status = fnInitIic(IicPtr);
-	}
+    if (XST_SUCCESS == status) {
+        status = fnInitIic(IicPtr);
+    }
 
-	if (XST_SUCCESS == status) {
-		status = fnConfigDma(AxiDmaPtr);
-	}
+    if (XST_SUCCESS == status) {
+        status = fnConfigDma(AxiDmaPtr);
+    }
 
-	if (XST_SUCCESS == status) {
-		status = fnInitAudio();
-	}
+    if (XST_SUCCESS == status) {
+        status = fnInitAudio();
+    }
 
-	fnSetLineInput();
-	fnSetHpOutput();
-	is_verbose = 0;
+    fnSetLineInput();
+    fnSetHpOutput();
+    is_verbose = 0;
 
-	dma_operation_colmplete_cb = finish_audio_task;
+    dma_operation_colmplete_cb = finish_audio_task;
 
-	return status;
+    return status;
 }
 
 XStatus rec_audio(void) {
-	if (audio_codec_busy) {
-		print("Audio Codec Busy; Can't Record!\n\r");
-		return XST_SUCCESS;
-	}
+    if (audio_codec_busy) {
+        print("Audio Codec Busy; Can't Record!\n\r");
+        return XST_SUCCESS;
+    }
 
-	audio_codec_busy = 1;
-	print("Start Recording Audio\n\r");
-	fnAudioRecord(*sAxiDmaPtr, (u32) RECORD_LENGTH);
-//	while (XAxiDma_Busy(sAxiDmaPtr, XAXIDMA_DEVICE_TO_DMA)) {
-//		if (audio_dma_error) {
-//			break;
-//		}
-//		MB_Sleep(100);
-//	}
-//
-//	print("End Recording Audio\n\r");
-	return XST_SUCCESS;
+    audio_codec_busy = 1;
+    print("Start Recording Audio\n\r");
+    fnAudioRecord(*sAxiDmaPtr, (u32) RECORD_LENGTH);
+    return XST_SUCCESS;
 }
 
 
 XStatus play_audio(void) {
-	if (audio_codec_busy) {
-		print("Audio Codec Busy; Can't Record!\n\r");
-		return XST_SUCCESS;
-	}
+    if (audio_codec_busy) {
+        print("Audio Codec Busy; Can't Record!\n\r");
+        return XST_SUCCESS;
+    }
 
-	print("Start Playing Audio\n\r");
+    print("Start Playing Audio\n\r");
 
-	audio_codec_busy = 1;
-	fnAudioPlay(*sAxiDmaPtr, (u32) RECORD_LENGTH);
-//	while (XAxiDma_Busy(sAxiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
-//		if (audio_dma_error) {
-//			break;
-//		}
-//		MB_Sleep(100);
-//	}
-//
-//	print("End Playing Audio\n\r");
-	return XST_SUCCESS;
+    audio_codec_busy = 1;
+    fnAudioPlay(*sAxiDmaPtr, (u32) RECORD_LENGTH);
+    return XST_SUCCESS;
 }
