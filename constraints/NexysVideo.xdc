@@ -27,6 +27,38 @@ set_property IOSTANDARD LVCMOS33 [get_ports MCLK_O]
 #set_property PACKAGE_PIN F15 [get_ports {btn[0]}]
 #set_property IOSTANDARD LVCMOS12 [get_ports {btn[0]}]
 
+#HDMI in
+#set_property -dict { PACKAGE_PIN AA5   IOSTANDARD LVCMOS33 } [get_ports { hdmi_rx_cec }]; #IO_L10P_T1_34 Sch=hdmi_rx_cec
+set_property -dict { PACKAGE_PIN W4    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_clk_n }]; #IO_L12N_T1_MRCC_34 Sch=hdmi_rx_clk_n
+set_property -dict { PACKAGE_PIN V4    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_clk_p }]; #IO_L12P_T1_MRCC_34 Sch=hdmi_rx_clk_p
+create_clock -period 12.500 -name tmds_clk_pin -waveform {0.000 6.250} -add [get_ports TMDS_IN_clk_p];
+set_property -dict { PACKAGE_PIN AB12  IOSTANDARD LVCMOS25 } [get_ports { hdmi_hpd }]; #IO_L7N_T1_13 Sch=hdmi_rx_hpa
+set_property -dict { PACKAGE_PIN Y4    IOSTANDARD LVCMOS33 } [get_ports { ddc_scl_io }]; #IO_L11P_T1_SRCC_34 Sch=hdmi_rx_scl
+set_property -dict { PACKAGE_PIN AB5   IOSTANDARD LVCMOS33 } [get_ports { ddc_sda_io }]; #IO_L10N_T1_34 Sch=hdmi_rx_sda
+set_property -dict { PACKAGE_PIN R3    IOSTANDARD LVCMOS33 } [get_ports { hdmi_rx_txen }]; #IO_L3P_T0_DQS_34 Sch=hdmi_rx_txen
+set_property -dict { PACKAGE_PIN AA3   IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_data_n[0] }]; #IO_L9N_T1_DQS_34 Sch=hdmi_rx_n[0]
+set_property -dict { PACKAGE_PIN Y3    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_data_p[0] }]; #IO_L9P_T1_DQS_34 Sch=hdmi_rx_p[0]
+set_property -dict { PACKAGE_PIN Y2    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_data_n[1] }]; #IO_L4N_T0_34 Sch=hdmi_rx_n[1]
+set_property -dict { PACKAGE_PIN W2    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_data_p[1] }]; #IO_L4P_T0_34 Sch=hdmi_rx_p[1]
+set_property -dict { PACKAGE_PIN V2    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_data_n[2] }]; #IO_L2N_T0_34 Sch=hdmi_rx_n[2]
+set_property -dict { PACKAGE_PIN U2    IOSTANDARD TMDS_33     } [get_ports { TMDS_IN_data_p[2] }]; #IO_L2P_T0_34 Sch=hdmi_rx_p[2]
+
+
+##HDMI out
+#set_property -dict { PACKAGE_PIN AA4   IOSTANDARD LVCMOS33 } [get_ports { hdmi_tx_cec }]; #IO_L11N_T1_SRCC_34 Sch=hdmi_tx_cec
+set_property -dict { PACKAGE_PIN U1    IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_clk_n }]; #IO_L1N_T0_34 Sch=hdmi_tx_clk_n
+set_property -dict { PACKAGE_PIN T1    IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_clk_p }]; #IO_L1P_T0_34 Sch=hdmi_tx_clk_p
+#set_property -dict { PACKAGE_PIN AB13  IOSTANDARD LVCMOS25 } [get_ports { hdmi_hpd }]; #IO_L3N_T0_DQS_13 Sch=hdmi_tx_hpd
+#set_property -dict { PACKAGE_PIN U3    IOSTANDARD LVCMOS33 } [get_ports { hdmi_tx_rscl }]; #IO_L6P_T0_34 Sch=hdmi_tx_rscl
+#set_property -dict { PACKAGE_PIN V3    IOSTANDARD LVCMOS33 } [get_ports { hdmi_tx_rsda }]; #IO_L6N_T0_VREF_34 Sch=hdmi_tx_rsda
+set_property -dict { PACKAGE_PIN Y1    IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_data_n[0] }]; #IO_L5N_T0_34 Sch=hdmi_tx_n[0]
+set_property -dict { PACKAGE_PIN W1    IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_data_p[0] }]; #IO_L5P_T0_34 Sch=hdmi_tx_p[0]
+set_property -dict { PACKAGE_PIN AB1   IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_data_n[1] }]; #IO_L7N_T1_34 Sch=hdmi_tx_n[1]
+set_property -dict { PACKAGE_PIN AA1   IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_data_p[1] }]; #IO_L7P_T1_34 Sch=hdmi_tx_p[1]
+set_property -dict { PACKAGE_PIN AB2   IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_data_n[2] }]; #IO_L8N_T1_34 Sch=hdmi_tx_n[2]
+set_property -dict { PACKAGE_PIN AB3   IOSTANDARD TMDS_33     } [get_ports { TMDS_OUT_data_p[2] }]; #IO_L8P_T1_34 Sch=hdmi_tx_p[2]
+
+
 #set_property PACKAGE_PIN G4 [get_ports CPU_RESETN]
 #set_property IOSTANDARD LVCMOS15 [get_ports CPU_RESETN]
 ##set_property -dict { PACKAGE_PIN M2   } [get_ports { DDR3_ADDR[0] }]; #IO_L16N_T2_35 Sch=ddr3_addr[0]
@@ -505,22 +537,22 @@ set_property -dict { PACKAGE_PIN AB20  IOSTANDARD LVCMOS33 } [get_ports { JA[3] 
 #set_property -dict { PACKAGE_PIN AB6   IOSTANDARD LVDS     } [get_ports { JC_N[4] }]; #IO_L20N_T3_34 Sch=jc_n[4]
 #set_property -dict { PACKAGE_PIN AB7   IOSTANDARD LVDS     } [get_ports { JC_P[4] }]; #IO_L20P_T3_34 Sch=jc_p[4]
 
-#set_property PACKAGE_PIN T14 [get_ports {led_tri_o[0]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[0]}]
-#set_property PACKAGE_PIN T15 [get_ports {led_tri_o[1]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[1]}]
-#set_property PACKAGE_PIN T16 [get_ports {led_tri_o[2]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[2]}]
-#set_property PACKAGE_PIN U16 [get_ports {led_tri_o[3]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[3]}]
-#set_property PACKAGE_PIN V15 [get_ports {led_tri_o[4]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[4]}]
-#set_property PACKAGE_PIN W16 [get_ports {led_tri_o[5]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[5]}]
-#set_property PACKAGE_PIN W15 [get_ports {led_tri_o[6]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[6]}]
-#set_property PACKAGE_PIN Y13 [get_ports {led_tri_o[7]}]
-#set_property IOSTANDARD LVCMOS25 [get_ports {led_tri_o[7]}]
+#set_property PACKAGE_PIN T14 [get_ports {led_8bits_tri_o[0]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[0]}]
+#set_property PACKAGE_PIN T15 [get_ports {led_8bits_tri_o[1]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[1]}]
+#set_property PACKAGE_PIN T16 [get_ports {led_8bits_tri_o[2]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[2]}]
+#set_property PACKAGE_PIN U16 [get_ports {led_8bits_tri_o[3]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[3]}]
+#set_property PACKAGE_PIN V15 [get_ports {led_8bits_tri_o[4]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[4]}]
+#set_property PACKAGE_PIN W16 [get_ports {led_8bits_tri_o[5]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[5]}]
+#set_property PACKAGE_PIN W15 [get_ports {led_8bits_tri_o[6]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[6]}]
+#set_property PACKAGE_PIN Y13 [get_ports {led_8bits_tri_o[7]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {led_8bits_tri_o[7]}]
 
 ##set_property PACKAGE_PIN D16 [get_ports {netic20_d16}]; #IO_L5N_T0_16
 ##set_property PACKAGE_PIN D20 [get_ports {netic20_d20}]; #IO_L19P_T3_16

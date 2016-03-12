@@ -90,7 +90,7 @@ int main() {
 	MB_Sleep(500);
 
     //LowLevelTest();
-    //HighLevelTest();
+    HighLevelTest();
 	//LaserTest();
 	MotorPatternTest();
 

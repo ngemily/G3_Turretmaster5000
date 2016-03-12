@@ -53,10 +53,13 @@
 #include "diskio/diskio.h"
 #include "diskio/ff.h"
 #include "motorcontrol/motorcontrol.h"
+#include "video_capture/video_capture.h"
+#include "display_ctrl/display_ctrl.h"
 
 #include "platform.h"
 #include "audio_engine.h"
 #include "uart_engine.h"
+#include "video_engine.h"
 
 /***************************** Include Files *********************************/
 
@@ -69,12 +72,8 @@
 #include <xuartlite.h>
 #include "xuartlite_l.h"
 #include "xgpio.h"
+#include "xintc.h"
 
-#ifdef XPAR_INTC_0_DEVICE_ID
- #include "xintc.h"
-#else
- #include "xscugic.h"
-#endif
 
 /************************** Constant Definitions *****************************/
 
@@ -131,25 +130,30 @@ static void stopTest();
  * Device instance definitions
  */
 
-static XIic      sIic;
-static XAxiDma   sAxiDma;
-static XIntc     sIntc;
-static XUartLite sUartLite;
-static XGpio sGpio;
+static XIic      	sIic;
+static XAxiDma   	sAxiDma;
+static XIntc     	sIntc;
+static XUartLite 	sUartLite;
+static XGpio     	sGpio;
+static VideoCapture	sVideoCapt;
 
 volatile int numInterrupts;
 
  // Interrupt vector table
- const ivt_t ivt[] = {
- 	//IIC
- 	{XPAR_MICROBLAZE_0_AXI_INTC_AXI_IIC_0_IIC2INTC_IRPT_INTR, (XInterruptHandler)XIic_InterruptHandler, &sIic},
- 	//DMA Stream to MemoryMap Interrupt handler
- 	{XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_S2MM_INTROUT_INTR,   (XInterruptHandler)fnS2MMInterruptHandler, &sAxiDma},
- 	//DMA MemoryMap to Stream Interrupt handler
- 	{XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_MM2S_INTROUT_INTR,   (XInterruptHandler)fnMM2SInterruptHandler, &sAxiDma},
- 	//UART Lite Interrupt handler
- 	{XPAR_MICROBLAZE_0_AXI_INTC_AXI_UARTLITE_0_INTERRUPT_INTR, (XInterruptHandler)XUartLite_InterruptHandler, &sUartLite},
- };
+const ivt_t ivt[] = {
+    //IIC
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_IIC_0_IIC2INTC_IRPT_INTR,     (XInterruptHandler)XIic_InterruptHandler, &sIic},
+    //DMA Stream to MemoryMap Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_S2MM_INTROUT_INTR,      (XInterruptHandler)fnS2MMInterruptHandler, &sAxiDma},
+    //DMA MemoryMap to Stream Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_MM2S_INTROUT_INTR,      (XInterruptHandler)fnMM2SInterruptHandler, &sAxiDma},
+    //UART Lite Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_UARTLITE_0_INTERRUPT_INTR,    (XInterruptHandler)XUartLite_InterruptHandler, &sUartLite},
+    //Video Capture Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_V_TC_1_IRQ_INTR,                   (XInterruptHandler)XVtc_IntrHandler, &(sVideoCapt.vtc)},
+    //Video GPIO Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_GPIO_VIDEO_IP2INTC_IRPT_INTR, (XInterruptHandler)GpioIsr, &sVideoCapt},
+};
 
  static TCHAR Buff[100];
  static volatile bool continueTest;
@@ -210,6 +214,7 @@ int main(void)
 	status |= initialize_audio(&sIic, &sAxiDma);
 	status |= fnInitInterruptController(&sIntc);
 	status |= initialize_debug(&sUartLite);
+	status |= initialize_video(&sVideoCapt, &sIntc);
 	status |= SetupSdGpio(&sGpio);
 
 	if (status != XST_SUCCESS) {
@@ -233,6 +238,7 @@ int main(void)
 	register_uart_response('m', MotorPatternTest);
 	register_uart_response('s', stopTest);
 
+	register_uart_response('v', run_video_demo);
 
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 	xil_printf("%08x\r\n", 0xDEADBEEF);
