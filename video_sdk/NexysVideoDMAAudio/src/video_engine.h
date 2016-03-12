@@ -32,12 +32,25 @@
  */
 #define DEMO_START_ON_DET 1
 
+enum OUTPUT_RESOULTION {
+    RES_1080P,
+    RES_720P,
+    RES_480P,
+    RES_SVGA
+};
+
 /* ------------------------------------------------------------ */
 /*					Procedure Declarations						*/
 /* ------------------------------------------------------------ */
 
 XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr);
-void run_video_demo(void);
+XStatus video_set_input_enabled(int enable);
+XStatus video_set_input_frame(u32 idx);
+XStatus video_set_output_frame(u32 idx);
+XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res);
+void    print_video_info(void)
+
+// Demo leftovers
 void VideoISR(void *callBackRef, void *pVideo);
 
 #endif /* VIDEO_ENGINE_H_ */

@@ -59,9 +59,6 @@ char fRefresh; //flag used to trigger a refresh of the Menu on video detect
 u8 *frameBuf = (u8*) MEM_BASE_ADDR;
 u8 *pFrames[DISPLAY_NUM_FRAMES]; //array of pointers to the frame buffers
 
-void DemoPrintMenu();
-void DemoChangeRes();
-void DemoCRMenu();
 void DemoPrintTest(u8 *frame, u32 width, u32 height, u32 stride, int pattern);
 
 /* ------------------------------------------------------------ */
@@ -138,210 +135,75 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
     return XST_SUCCESS;
 }
 
-void run_video_demo()
-{
-    int nextFrame = 0;
-    char userInput = 0;
-    u32 locked;
-    XGpio *GpioPtr = &(videoCaptPtr->gpio);
-
-    /* Flush UART FIFO */
-    while (!XUartLite_IsReceiveEmpty(UART_BASEADDR))
-    {
-        XUartLite_ReadReg(UART_BASEADDR, XUL_RX_FIFO_OFFSET);
-    }
-    while (userInput != 'q')
-    {
-        fRefresh = 0;
-        DemoPrintMenu();
-
-        /* Wait for data on UART */
-        while (XUartLite_IsReceiveEmpty(UART_BASEADDR) && !fRefresh)
-        {}
-
-        /* Store the first character in the UART receive FIFO and echo it */
-        if (!XUartLite_IsReceiveEmpty(UART_BASEADDR))
-        {
-            userInput = XUartLite_ReadReg(UART_BASEADDR, XUL_RX_FIFO_OFFSET);
-            xil_printf("%c", userInput);
-        }
-        else  //Refresh triggered by video detect interrupt
-        {
-            userInput = 'r';
-        }
-
-        xil_printf(" ~~ %c ~~ ", userInput);
-
-        switch (userInput)
-        {
-            case 'i':
-                VtcIsr(videoCaptPtr, 0);
-                break;
-            case '1':
-                DemoChangeRes();
-                break;
-            case '2':
-                nextFrame = dispCtrl.curFrame + 1;
-                if (nextFrame >= DISPLAY_NUM_FRAMES)
-                {
-                    nextFrame = 0;
-                }
-                DisplayChangeFrame(&dispCtrl, nextFrame);
-                break;
-            case '3':
-                DemoPrintTest(pFrames[dispCtrl.curFrame], dispCtrl.vMode.width, dispCtrl.vMode.height, DEMO_STRIDE, DEMO_PATTERN_0);
-                break;
-            case '4':
-                DemoPrintTest(pFrames[dispCtrl.curFrame], dispCtrl.vMode.width, dispCtrl.vMode.height, DEMO_STRIDE, DEMO_PATTERN_1);
-                break;
-            case '5':
-                if (videoCaptPtr->state == VIDEO_STREAMING)
-                    VideoStop(videoCaptPtr);
-                else
-                    VideoStart(videoCaptPtr);
-                break;
-            case '6':
-                nextFrame = videoCaptPtr->curFrame + 1;
-                if (nextFrame >= DISPLAY_NUM_FRAMES)
-                {
-                    nextFrame = 0;
-                }
-                VideoChangeFrame(videoCaptPtr, nextFrame);
-                break;
-            case 'q':
-                break;
-            case 'r':
-                locked = XGpio_DiscreteRead(GpioPtr, 2);
-                xil_printf("%d", locked);
-                break;
-            default :
-                xil_printf("\n\rInvalid Selection");
-                MB_Sleep(50);
-        }
+XStatus video_set_input_frame(u32 idx) {
+    if (idx >= DISPLAY_NUM_FRAMES) {
+        return XST_FAILURE;
     }
 
-    return;
+    return VideoChangeFrame(videoCaptPtr, idx);
 }
 
-void DemoPrintMenu()
-{
-    //xil_printf("\x1B[H"); //Set cursor to top left of terminal
-    //xil_printf("\x1B[2J"); //Clear terminal
-    xil_printf("**************************************************\n\r");
-    xil_printf("*                ZYBO Video Demo                 *\n\r");
-    xil_printf("**************************************************\n\r");
-    xil_printf("*Display Resolution: %28s*\n\r", dispCtrl.vMode.label);
-    printf("*Display Pixel Clock Freq. (MHz): %15.3f*\n\r", dispCtrl.pxlFreq);
-    xil_printf("*Display Frame Index: %27d*\n\r", dispCtrl.curFrame);
-    if (videoCaptPtr->state == VIDEO_DISCONNECTED) xil_printf("*Video Capture Resolution: %22s*\n\r", "!HDMI UNPLUGGED!");
-    else xil_printf("*Video Capture Resolution: %17dx%-4d*\n\r", videoCaptPtr->timing.HActiveVideo, videoCaptPtr->timing.VActiveVideo);
-    xil_printf("*Video Frame Index: %29d*\n\r", videoCaptPtr->curFrame);
-    xil_printf("**************************************************\n\r");
-    xil_printf("\n\r");
-    xil_printf("1 - Change Display Resolution\n\r");
-    xil_printf("2 - Change Display Framebuffer Index\n\r");
-    xil_printf("3 - Print Blended Test Pattern to Display Framebuffer\n\r");
-    xil_printf("4 - Print Color Bar Test Pattern to Display Framebuffer\n\r");
-    xil_printf("5 - Start/Stop Video stream into Video Framebuffer\n\r");
-    xil_printf("6 - Change Video Framebuffer Index\n\r");
-    xil_printf("7 - Grab Video Frame and invert colors\n\r");
-    xil_printf("8 - Grab Video Frame and scale to Display resolution\n\r");
-    xil_printf("q - Quit\n\r");
-    xil_printf("\n\r");
-    xil_printf("\n\r");
-    xil_printf("Enter a selection:");
-}
-
-void DemoChangeRes()
-{
-    int fResSet = 0;
-    int status;
-    char userInput = 0;
-
-    /* Flush UART FIFO */
-    while (!XUartLite_IsReceiveEmpty(UART_BASEADDR))
-    {
-        XUartLite_ReadReg(UART_BASEADDR, XUL_RX_FIFO_OFFSET);
+XStatus video_set_output_frame(u32 idx) {
+    if (idx >= DISPLAY_NUM_FRAMES) {
+        return XST_FAILURE;
     }
 
-    while (!fResSet)
-    {
-        DemoCRMenu();
-
-        /* Wait for data on UART */
-        while (XUartLite_IsReceiveEmpty(UART_BASEADDR) && !fRefresh)
-        {}
-
-        /* Store the first character in the UART recieve FIFO and echo it */
-
-        userInput = XUartLite_ReadReg(UART_BASEADDR, XUL_RX_FIFO_OFFSET);
-        xil_printf("%c", userInput);
-        status = XST_SUCCESS;
-        switch (userInput)
-        {
-            case '1':
-                status = DisplayStop(&dispCtrl);
-                DisplaySetMode(&dispCtrl, &VMODE_640x480);
-                DisplayStart(&dispCtrl);
-                fResSet = 1;
-                break;
-            case '2':
-                status = DisplayStop(&dispCtrl);
-                DisplaySetMode(&dispCtrl, &VMODE_800x600);
-                DisplayStart(&dispCtrl);
-                fResSet = 1;
-                break;
-            case '3':
-                status = DisplayStop(&dispCtrl);
-                DisplaySetMode(&dispCtrl, &VMODE_1280x720);
-                DisplayStart(&dispCtrl);
-                fResSet = 1;
-                break;
-            case '4':
-                status = DisplayStop(&dispCtrl);
-                DisplaySetMode(&dispCtrl, &VMODE_1280x1024);
-                DisplayStart(&dispCtrl);
-                fResSet = 1;
-                break;
-            case '5':
-                status = DisplayStop(&dispCtrl);
-                DisplaySetMode(&dispCtrl, &VMODE_1920x1080);
-                DisplayStart(&dispCtrl);
-                fResSet = 1;
-                break;
-            case 'q':
-                fResSet = 1;
-                break;
-            default :
-                xil_printf("\n\rInvalid Selection");
-                MB_Sleep(50);
-        }
-        if (status == XST_DMA_ERROR)
-        {
-            xil_printf("\n\rWARNING: AXI VDMA Error detected and cleared\n\r");
-        }
-    }
+    return DisplayChangeFrame(&dispCtrl, idx);
 }
 
-void DemoCRMenu()
+XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res) {
+    VideoMode *mode = NULL;
+    switch (res) {
+    case RES_1080P:
+        mode = &VMODE_1920x1080;
+        break;
+    case RES_720P:
+        mode = &VMODE_1280x720;
+        break;
+    case RES_480P:
+        mode = &VMODE_640x480;
+        break;
+    case RES_SVGA:
+        mode = &VMODE_800x600;
+        break;
+    default:
+        break;
+    }
+
+    if (NULL == mode) {
+        return XST_FAILURE;
+    }
+
+    XStatus status = DisplayStop(&dispCtrl);
+    status |= DisplaySetMode(&dispCtrl, &VMODE_640x480);
+    status |= DisplayStart(&dispCtrl);
+    return status;
+}
+
+XStatus video_set_input_enabled(int enable) {
+    if (!enable && VIDEO_STREAMING == videoCaptPtr->state) {
+        VideoStop(videoCaptPtr);
+    } else if (enable && VIDEO_PAUSED == videoCaptPtr->state) {
+        VideoStart(videoCaptPtr);
+    } else if (VIDEO_DISCONNECTED == videoCaptPtr->state) {
+        print("Video Diconnected, can't enable!!\n\r");
+        return XST_FAILURE;
+    }
+
+    return XST_SUCCESS;
+}
+
+void print_video_info(void)
 {
-    xil_printf("\x1B[H"); //Set cursor to top left of terminal
-    xil_printf("\x1B[2J"); //Clear terminal
-    xil_printf("**************************************************\n\r");
-    xil_printf("*                ZYBO Video Demo                 *\n\r");
-    xil_printf("**************************************************\n\r");
-    xil_printf("*Current Resolution: %28s*\n\r", dispCtrl.vMode.label);
-    printf("*Pixel Clock Freq. (MHz): %23.3f*\n\r", dispCtrl.pxlFreq);
-    xil_printf("**************************************************\n\r");
-    xil_printf("\n\r");
-    xil_printf("1 - %s\n\r", VMODE_640x480.label);
-    xil_printf("2 - %s\n\r", VMODE_800x600.label);
-    xil_printf("3 - %s\n\r", VMODE_1280x720.label);
-    xil_printf("4 - %s\n\r", VMODE_1280x1024.label);
-    xil_printf("5 - %s\n\r", VMODE_1920x1080.label);
-    xil_printf("q - Quit (don't change resolution)\n\r");
-    xil_printf("\n\r");
-    xil_printf("Select a new resolution:");
+    xil_printf("Display Resolution: %28s*\n\r", dispCtrl.vMode.label);
+    xil_printf("Display Pixel Clock Freq. (MHz): %15.3f*\n\r", dispCtrl.pxlFreq);
+    xil_printf("Display Frame Index: %27d*\n\r", dispCtrl.curFrame);
+    if (videoCaptPtr->state == VIDEO_DISCONNECTED)
+        xil_printf("Video Capture Resolution: %22s*\n\r", "!HDMI UNPLUGGED!");
+    else
+        xil_printf("Video Capture Resolution: %17dx%-4d*\n\r",
+                videoCaptPtr->timing.HActiveVideo, videoCaptPtr->timing.VActiveVideo);
+    xil_printf("Video Frame Index: %29d*\n\r", videoCaptPtr->curFrame);
 }
 
 void DemoPrintTest(u8 *frame, u32 width, u32 height, u32 stride, int pattern)
