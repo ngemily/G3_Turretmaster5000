@@ -81,8 +81,7 @@
 		.C_S_AXI_DATA_WIDTH(C_S_AXI_LITE_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH),
 		.FRAME_WIDTH(FRAME_WIDTH),
-        .FRAME_HEIGHT(FRAME_HEIGHT),
-        .WORDS_PER_LINE(WORDS_PER_LINE)
+        .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXI_LITE_inst (
         .buf_from_rx(wire_rx2lite),
         .buf_to_tx(wire_lite2tx),
@@ -115,8 +114,7 @@
 	image_processing_ip_v1_0_S_AXIS_MM2S # ( 
 		.C_S_AXIS_TDATA_WIDTH(C_S_AXIS_MM2S_TDATA_WIDTH),
         .FRAME_WIDTH(FRAME_WIDTH),
-        .FRAME_HEIGHT(FRAME_HEIGHT),
-        .WORDS_PER_LINE(WORDS_PER_LINE)
+        .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXIS_MM2S_inst (
 	    .buf_outof_rx(wire_rx2lite),
 	    .rx_in_en(rx_in_en),
@@ -134,8 +132,7 @@
 		.C_M_AXIS_TDATA_WIDTH(C_M_AXIS_S2MM_TDATA_WIDTH),
 		.C_M_START_COUNT(C_M_AXIS_S2MM_START_COUNT),
 		.FRAME_WIDTH(FRAME_WIDTH),
-		.FRAME_HEIGHT(FRAME_HEIGHT),
-        .WORDS_PER_LINE(WORDS_PER_LINE)
+		.FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_M_AXIS_S2MM_inst (
         .buf_into_tx(wire_lite2tx),
         .rx_in_en(rx_in_en),

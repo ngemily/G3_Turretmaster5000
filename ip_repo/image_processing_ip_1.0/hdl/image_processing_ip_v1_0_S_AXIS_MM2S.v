@@ -6,7 +6,6 @@
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
-        parameter integer WORDS_PER_LINE = 1280,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -15,7 +14,7 @@
 	)
 	(
 		// Users to add ports here
-        output reg  [C_S_AXIS_TDATA_WIDTH-1 : 0] buf_outof_rx,
+        output reg [C_S_AXIS_TDATA_WIDTH-1 : 0] buf_outof_rx,
         output reg rx_in_en,
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -45,7 +44,7 @@
 	endfunction
 
 	// Total number of input data.
-	localparam NUMBER_OF_INPUT_WORDS = WORDS_PER_LINE;
+	localparam NUMBER_OF_INPUT_WORDS = FRAME_WIDTH;
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);
 	// Define the states of state machine
@@ -145,9 +144,13 @@
 	assign fifo_wren = S_AXIS_TVALID && axis_tready;
 
 	// FIFO Implementation
+    
+    
     reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : NUMBER_OF_INPUT_WORDS-1];
     
     // Streaming input data is stored in FIFO
+    
+    /*
     
     always @( posedge S_AXIS_ACLK )
     begin
@@ -155,13 +158,15 @@
         begin
           stream_data_fifo[write_pointer] <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
         end  
-    end  
-
+    end 
+    
+    */
+     
 	// Add user logic here    
 
     always @( posedge S_AXIS_ACLK )
     begin
-        rx_in_en <= fifo_wren;
+        rx_in_en <= fifo_wren; // delay the rx_in_en signal to align with the loading of buf_outof_rx
         if (fifo_wren) begin
             buf_outof_rx <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
         end  

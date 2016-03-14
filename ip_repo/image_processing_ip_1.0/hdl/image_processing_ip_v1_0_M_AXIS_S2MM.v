@@ -6,14 +6,13 @@
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
-        parameter integer WORDS_PER_LINE = 1280,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
 		// Width of S_AXIS address bus. The slave accepts the read and write addresses of width C_M_AXIS_TDATA_WIDTH.
 		parameter integer C_M_AXIS_TDATA_WIDTH	= 32,
 		// Start count is the numeber of clock cycles the master will wait before initiating/issuing any transaction.
-		parameter integer C_M_START_COUNT	= 32
+		parameter integer C_M_START_COUNT	= 3*1280
 	)
 	(
 		// Users to add ports here
@@ -37,9 +36,8 @@
 		// TREADY indicates that the slave can accept a transfer in the current cycle.
 		input wire  M_AXIS_TREADY
 	);
-	//Total number of output data.
 	// Total number of output data                                                 
-	localparam NUMBER_OF_OUTPUT_WORDS = WORDS_PER_LINE;                                               
+	localparam NUMBER_OF_OUTPUT_WORDS = FRAME_WIDTH;                                               
 	                                                                                     
 	// function called clogb2 that returns an integer which has the                      
 	// value of the ceiling of the log base 2.                                           
@@ -212,22 +210,22 @@
 
 	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
 	                                                     
-	    // Streaming output data is read from FIFO       
-	    always @( posedge M_AXIS_ACLK )                  
-	    begin                                            
-	      if(!M_AXIS_ARESETN)                            
-	        begin                                        
-	          stream_data_out <= 1;                      
-	        end                                          
-	      else if (rx_in_en) //(tx_en)
-	        begin                                        
-	          stream_data_out <= buf_into_tx; //buf_out[read_pointer + 32'b1];   
-	        end                                          
-	    end                                              
+    // Streaming output data is read from FIFO       
+    always @( posedge M_AXIS_ACLK )                  
+    begin                                            
+      if(!M_AXIS_ARESETN)                            
+        begin                                        
+          stream_data_out <= 1;                      
+        end                                          
+      else if (tx_en)
+        begin                                        
+          stream_data_out <= buf_out[read_pointer + 32'b1];   
+        end                                          
+    end                                              
 
 	// Add user logic here
     reg  [C_M_AXIS_TDATA_WIDTH-1 : 0] buf_out [0 : NUMBER_OF_OUTPUT_WORDS-1];
-
+    
     integer i;
     always @(posedge M_AXIS_ACLK) begin
         if(rx_in_en) begin
@@ -237,10 +235,7 @@
             end   
         end
     end
-    
-    always @(posedge M_AXIS_ACLK) begin
-        
-    end
+
 	// User logic ends
 
 	endmodule

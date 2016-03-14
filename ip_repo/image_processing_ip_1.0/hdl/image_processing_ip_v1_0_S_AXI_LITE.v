@@ -1,13 +1,21 @@
 
 `timescale 1 ns / 1 ps
 
+//`include "global.vh"
+
+`define THRESHOLD 150
+`define MAX 255
+`define MIN 0
+//`define MEM_SIZE 'h10_0000
+`define WORD_SIZE 8
+`define PIXEL_SIZE 24
+
 	module image_processing_ip_v1_0_S_AXI_LITE #
 	(
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
 		parameter integer AXIS_TDATA_WIDTH = 32,
-        parameter integer WORDS_PER_LINE = 1280,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -595,33 +603,80 @@
     reg [31:0] obj2_m5;
     reg [31:0] obj2_m6;
     
-    localparam NUMBER_OF_INPUT_WORDS  = WORDS_PER_LINE;
+    localparam WORDS_PER_LINE = FRAME_WIDTH;
 
-    reg  [AXIS_TDATA_WIDTH-1 : 0] buf0 [0 : NUMBER_OF_INPUT_WORDS-1];
-    reg  [AXIS_TDATA_WIDTH-1 : 0] buf1 [0 : NUMBER_OF_INPUT_WORDS-1];
-    reg  [AXIS_TDATA_WIDTH-1 : 0] buf2 [0 : NUMBER_OF_INPUT_WORDS-1];
+    reg  [AXIS_TDATA_WIDTH-1 : 0] buf0 [0 : WORDS_PER_LINE-1];
+    reg  [AXIS_TDATA_WIDTH-1 : 0] buf1 [0 : WORDS_PER_LINE-1];
+    reg  [AXIS_TDATA_WIDTH-1 : 0] buf2 [0 : WORDS_PER_LINE-1];
             
     integer i;
     always @(posedge S_AXI_ACLK) begin
         if(rx_in_en) begin
             buf0[0] <= buf_from_rx;
-            buf1[0] <= buf0[NUMBER_OF_INPUT_WORDS - 1];
-            buf2[0] <= buf1[NUMBER_OF_INPUT_WORDS - 1];
-            //buf_to_tx <= buf2[NUMBER_OF_INPUT_WORDS-1];
+            buf1[0] <= buf0[WORDS_PER_LINE - 1];
+            buf2[0] <= buf1[WORDS_PER_LINE - 1];
             
-            buf_to_tx[7:0] <= buf2[NUMBER_OF_INPUT_WORDS-1][15:8];
-            buf_to_tx[15:8] <= buf2[NUMBER_OF_INPUT_WORDS-1][7:0];
-            buf_to_tx[23:16] <= buf2[NUMBER_OF_INPUT_WORDS-1][23:16];
-            buf_to_tx[31:24] <= buf2[NUMBER_OF_INPUT_WORDS-1][31:24];
-
-            for(i = 1; i < NUMBER_OF_INPUT_WORDS; i = i + 1) begin
+            for(i = 1; i < WORDS_PER_LINE; i = i + 1) begin
                 buf2[i] <= buf2[i - 1];
                 buf1[i] <= buf1[i - 1];
-                buf0[i] <= buf0[i - 1];
+                buf0[i] <= buf0[i - 1];    
             end
+            //buf_to_tx <= buf2[NUMBER_OF_INPUT_WORDS-1];
+
+            buf_to_tx[7:0] <= buf2[WORDS_PER_LINE-1][15:8];     // puts blue into green
+            buf_to_tx[15:8] <= buf2[WORDS_PER_LINE-1][7:0];     // puts green into blue
+            buf_to_tx[23:16] <= buf2[WORDS_PER_LINE-1][23:16];  // keeps red the same
+            buf_to_tx[31:24] <= buf2[WORDS_PER_LINE-1][31:24];  // blank
+
         end    
     end
 
+
+    /*
+    always @(posedge S_AXI_ACLK) begin
+	if ((diff1 > threshold) & (diff2 > threshold) & (diff3 > threshold)) begin
+	    if (done == 1)
+		start <= current_pixel;
+		count <= count + 1;
+		done = 0;
+	end
+	else begin
+	    centre <= start + ((count + 1) >> 1);
+	    count <= 0;
+	    done <= 1;
+	end
+    end
+*/
+
+    
 	// User logic ends
 
 	endmodule
+
+    /*
+    * Take the difference of the red, blue, and green components.
+    */
+    module r_minus_gb (
+        input [`WORD_SIZE - 1:0] R,
+        input [`WORD_SIZE - 1:0] G,
+        input [`WORD_SIZE - 1:0] B,
+        output [`WORD_SIZE - 1:0] diff
+    );
+        assign diff = R - G - B;
+    endmodule
+    
+    
+    /**
+    * Perform binary threshold, like a step function u(t).
+    */
+    module threshold #(
+        parameter WIDTH = 1,
+        parameter THRESHOLD = `THRESHOLD,
+        parameter HI = `MAX,
+        parameter LO = `MIN
+    ) (
+        input [WIDTH - 1:0] d,
+        output [WIDTH - 1:0] q
+    );
+        assign q = (d > THRESHOLD) ? HI : LO;
+    endmodule
