@@ -22,6 +22,8 @@
 #include "xil_types.h"
 #include "xil_cache.h"
 #include "xparameters.h"
+#include "microblaze_sleep.h"
+#include "demo.h"
 
 /*
  * XPAR redefines
@@ -35,9 +37,6 @@
 #define VID_GPIO_IRPT_ID 	XPAR_INTC_0_GPIO_0_VEC_ID
 #define SCU_TIMER_ID 		XPAR_AXI_TIMER_0_DEVICE_ID
 #define UART_BASEADDR 		XPAR_UARTLITE_0_BASEADDR
-
-#define DDR_BASE_ADDR		XPAR_MIG7SERIES_0_BASEADDR
-#define MEM_BASE_ADDR		(DDR_BASE_ADDR + 0x10000000)
 
 /* ------------------------------------------------------------ */
 /*				Global Variables								*/
@@ -58,6 +57,7 @@ char fRefresh; //flag used to trigger a refresh of the Menu on video detect
 //u8 frameBuf[DISPLAY_NUM_FRAMES][DEMO_MAX_FRAME];
 u8 *frameBuf = (u8*) MEM_BASE_ADDR;
 u8 *pFrames[DISPLAY_NUM_FRAMES]; //array of pointers to the frame buffers
+
 
 void DemoPrintTest(u8 *frame, u32 width, u32 height, u32 stride, int pattern);
 

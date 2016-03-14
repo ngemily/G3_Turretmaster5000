@@ -70,7 +70,6 @@
 #include "../demo.h"
 
 /************************** Constant Definitions *****************************/
-#define DDR_OFFSET				0x07F00000
 
 // Base Addresses
 #define SW_ADDR					XPAR_SWITCHES_0_BASEADDR
@@ -241,7 +240,7 @@ XStatus fnAudioPllConfig();
 XStatus fnAudioStartupConfig ();
 XStatus fnInitAudio();
 void fnAudioRecord(XAxiDma AxiDma, u32 u32NrSamples);
-void fnAudioPlay(XAxiDma AxiDma, u32 u32NrSamples);
+void fnAudioPlay(XAxiDma AxiDma, u32 baseAddr, u32 u32NrSamples);
 void fnSetLineInput();
 void fnSetLineOutput();
 void fnSetMicInput();

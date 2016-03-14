@@ -10,43 +10,135 @@
 #include <xintc.h>
 #include <xuartlite.h>
 #include <xuartlite_l.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "uart_engine.h"
 
-static UartResponseFunction uart_responses[256];
+static char commandBuffer[MAX_COMMAND_LENGTH + 1];
+static u8 commandIndex;
 
-//The Receive Interrupt Handler
-void _uart_recv_handler(void* CallBackRef, unsigned int EventData) {
-    XUartLite *uart_ptr = (XUartLite*) CallBackRef;
-    u8 recv = (u8) XUartLite_RecvByte(uart_ptr->RegBaseAddress);
-    UartResponseFunction response = uart_responses[recv];
 
-    xil_printf("in recv handler.\r\n");
+static struct {
+	char *cmdString;
+	UartResponseFunction response;
+} commandTable[MAX_NUM_COMMANDS];
 
-    if (NULL != response) {
-        response();
-    } else {
-        xil_printf("No handler registered for '%c' (%d)\r\n", recv, recv);
-    }
+static int numCommands;
+
+
+static enum {
+	PROC_COMMAND = 0,
+	PROC_ARG,
+} uartState;
+
+
+int getCommandIndex(char *cmdString) {
+	int i = 0;
+	while (i < numCommands) {
+		if (strcmp(commandTable[i].cmdString, cmdString) == 0) {
+			break;
+		}
+		i++;
+	}
+
+	if (i == numCommands) {
+		i = -1;
+	}
+
+	return i;
 }
+
+void uartCommandRecvHandler(u8 recv) {
+	if (isprint(recv) || isspace(recv)) {
+		xil_printf("%c", recv);
+	}
+
+	if (recv == '\r') {
+		int handlerIndex;
+		xil_printf("\r\n");
+
+		// Null terminate the command string.
+		commandBuffer[commandIndex] = '\0';
+
+		// Find the command in the command table and call it.
+		handlerIndex = getCommandIndex(commandBuffer);
+		if (handlerIndex == -1) {
+			xil_printf("No handler was registered for string '%s'\r\n", commandBuffer);
+		} else {
+			commandTable[handlerIndex].response();
+		}
+
+		xil_printf(PROMPT_STRING);
+
+		// Reset the UART state machine.
+		commandIndex = 0;
+	} else if (recv == '\b') {
+		if (commandIndex > 0) {
+			commandIndex--;
+			xil_printf("\b \b");
+		}
+	} else {
+		if (commandIndex >= MAX_COMMAND_LENGTH) {
+			xil_printf("\r\nCommand too long!\r\n");
+			xil_printf(PROMPT_STRING);
+			commandIndex = 0;
+		}
+
+		commandBuffer[commandIndex++] = recv;
+	}
+}
+
+
+void uartRecvHandler(void* CallBackRef, unsigned int EventData) {
+	XUartLite *uart_ptr = (XUartLite*) CallBackRef;
+    u8 recv = (u8) XUartLite_RecvByte(uart_ptr->RegBaseAddress);
+
+    switch (uartState) {
+    case PROC_COMMAND:
+    	uartCommandRecvHandler(recv);
+    break;
+
+    case PROC_ARG:
+    break;
+
+    default:
+    	xil_printf("Invalid UART state!\r\n");
+    	uartState = PROC_COMMAND;
+    break;
+    }
+
+}
+
 
 //The Send Interrupt Handler
 void _uart_send_handler(void* CallBackRef, unsigned int EventData) {
-    print("Inside the send handler\r\n");
+	print("Inside the send handler\r\n");
 }
 
-XStatus register_uart_response(u8 id, UartResponseFunction response) {
-    if (NULL == uart_responses[id]) {
-        uart_responses[id] = response;
-        return XST_SUCCESS;
-    } else {
-        xil_printf("Handler already registered for '%c' (%d) %x\r\n", id, id, uart_responses[id]);
-    }
-    return XST_FAILURE;
+
+XStatus register_uart_response(char *cmdString, UartResponseFunction response) {
+	int foundIndex = getCommandIndex(cmdString);
+	XStatus result = XST_SUCCESS;
+
+	if (foundIndex != -1) {
+		xil_printf("Command already has registered handler: %s\r\n", cmdString);
+		result = XST_FAILURE;
+	} else if (numCommands >= MAX_NUM_COMMANDS) {
+		xil_printf("Reached maximum number of commands. \r\n");
+		result = XST_FAILURE;
+	} else {
+		commandTable[numCommands].cmdString = cmdString;
+		commandTable[numCommands].response = response;
+		numCommands++;
+	}
+
+   return result;
 }
 
-XStatus initialize_debug(XUartLite *uart_ptr) {
-    int status;
+
+XStatus initialize_uart(XUartLite *uart_ptr) {
+	int status;
 
     print("Initializing Debug...\n\r");
 
@@ -62,10 +154,15 @@ XStatus initialize_debug(XUartLite *uart_ptr) {
         return XST_FAILURE;
     }
 
-    XUartLite_SetRecvHandler(uart_ptr, _uart_recv_handler, uart_ptr);
-    XUartLite_SetSendHandler(uart_ptr, _uart_send_handler, uart_ptr);
-    XUartLite_EnableInterrupt(uart_ptr);
-
-    return XST_SUCCESS;
+	// Set up the UART interrupt handlers.
+	XUartLite_SetRecvHandler(uart_ptr, uartRecvHandler, uart_ptr);
+	XUartLite_SetSendHandler(uart_ptr, _uart_send_handler, uart_ptr);
+	XUartLite_EnableInterrupt(uart_ptr);
+	
+	// Initialize the state machine and the buffers.
+	commandIndex = 0;
+	uartState = PROC_COMMAND;
+	numCommands = 0;
+	return XST_SUCCESS;
 }
 

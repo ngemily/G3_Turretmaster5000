@@ -33,7 +33,8 @@
 
 
 #define DDR_BASE_ADDR		XPAR_MIG7SERIES_0_BASEADDR
-#define MEM_BASE_ADDR		(DDR_BASE_ADDR + 0x10000000)
+#define MEM_BASE_ADDR		(DDR_BASE_ADDR + 0x08000000)
+#define AUDIO_BASE_ADDR		(DDR_BASE_ADDR + 0x10000000)
 
 #define RX_INTR_ID		XPAR_INTC_0_AXIDMA_0_S2MM_INTROUT_VEC_ID
 #define TX_INTR_ID		XPAR_INTC_0_AXIDMA_0_MM2S_INTROUT_VEC_ID
@@ -46,6 +47,17 @@
 
 #define INTC		XIntc
 #define INTC_HANDLER	XIntc_InterruptHandler
+
+
+#define RECORD_LENGTH (5*96000)
+
+// The DMA only allows transfers of up to 8M.
+// The DMA works in units of 32bit words.
+#define MAX_SONG_LENGTH (0x800000)
+
+// for now, while we debug the random reset issue, we'll set the max length lower
+#define MAX_PLAYBACK_LENGTH (10 * 96000)
+#define SONG_PATH "song.raw"
 
 
 #endif /* MAIN_H_ */

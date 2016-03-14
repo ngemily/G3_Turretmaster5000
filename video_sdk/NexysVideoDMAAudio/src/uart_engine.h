@@ -11,9 +11,14 @@
 #include <xstatus.h>
 #include <xuartlite.h>
 
+#define MAX_COMMAND_LENGTH (15)
+#define MAX_NUM_COMMANDS (50)
+
+#define PROMPT_STRING (">>>")
+
 typedef void (*UartResponseFunction)(void);
 
-XStatus initialize_debug(XUartLite *uart_ptr);
-XStatus register_uart_response(u8 id, UartResponseFunction response);
+XStatus initialize_uart(XUartLite *uart_ptr);
+XStatus register_uart_response(char *cmdString, UartResponseFunction response);
 
 #endif /* UART_ENGINE_H_ */

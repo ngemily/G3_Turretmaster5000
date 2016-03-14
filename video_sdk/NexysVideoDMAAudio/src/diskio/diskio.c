@@ -16,7 +16,7 @@
 
 #include "diskio.h"
 
-
+#define SLOW_MODE
 #define DEBUG_SD
 #ifdef DEBUG_SD
 	#define SD_DEBUG_PRINT(...) xil_printf(__VA_ARGS__)
@@ -246,6 +246,38 @@ DRESULT disk_read (
 	}
 
 	// We issue different commands depending on the count.
+#ifdef SLOW_MODE
+	cmd = CMD17;
+	do {
+
+		// Give multiple attempts at reading a sector.
+		// This is needed because our SD card is junk.
+		// Also, our SD card doesn't support multi-sector reads.
+		int retriesRemaining = 100;
+		while (retriesRemaining > 0) {
+			NumRespBytes = SendCmd(cmd, sector, buff);
+			if ((NumRespBytes < 1) || (buff[0] != 0)) {
+				//SD_DEBUG_PRINT("Failed to send read command: %d, %02x\n\r", NumRespBytes, buff[0]);
+				retriesRemaining--;
+				continue;
+			}
+
+			if (ReceiveDatablock(buff, 512)) break;
+			retriesRemaining--;
+		}
+
+		// Check if we ended up reading the sector or not.
+		if (retriesRemaining <= 0) {
+			SD_DEBUG_PRINT("Did not detect data block.\n\r");
+			break;
+		} else {
+			buff += 512;
+			sector++;
+		}
+	} while (--count);
+
+
+#else
 	cmd = (count > 1) ? CMD18 : CMD17;
 	NumRespBytes = SendCmd(cmd, sector, buff);
 	if ((NumRespBytes < 1) || (buff[0] != 0)) {
@@ -258,6 +290,7 @@ DRESULT disk_read (
 		if (!ReceiveDatablock(buff, 512)) break;
 		buff += 512;
 	} while (--count);
+#endif
 
 	// CMD18, used for multiple sector reads, requires a STOP command or it will perpetually read sectors.
 	if (cmd == CMD18) {
@@ -640,7 +673,7 @@ static bool ReceiveDatablock(u8 *Data, int ByteCount) {
 	}
 
 	if (RetriesRemaining == 0) {
-		SD_DEBUG_PRINT("Did not detect data block.\n\r");
+		//SD_DEBUG_PRINT("Did not detect data block.\n\r");
 		return false;
 	}
 

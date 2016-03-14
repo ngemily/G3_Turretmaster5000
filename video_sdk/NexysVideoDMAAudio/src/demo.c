@@ -1,43 +1,43 @@
 /******************************************************************************
- *
- * (c) Copyright 2010-2013 Xilinx, Inc. All rights reserved.
- *
- * This file contains confidential and proprietary information of Xilinx, Inc.
- * and is protected under U.S. and international copyright and other
- * intellectual property laws.
- *
- * DISCLAIMER
- * This disclaimer is not a license and does not grant any rights to the
- * materials distributed herewith. Except as otherwise provided in a valid
- * license issued to you by Xilinx, and to the maximum extent permitted by
- * applicable law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND WITH ALL
- * FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS,
- * IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
- * MERCHANTABILITY, NON-INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE;
- * and (2) Xilinx shall not be liable (whether in contract or tort, including
- * negligence, or under any other theory of liability) for any loss or damage
- * of any kind or nature related to, arising under or in connection with these
- * materials, including for any direct, or any indirect, special, incidental,
- * or consequential loss or damage (including loss of data, profits, goodwill,
- * or any type of loss or damage suffered as a result of any action brought by
- * a third party) even if such damage or loss was reasonably foreseeable or
- * Xilinx had been advised of the possibility of the same.
- *
- * CRITICAL APPLICATIONS
- * Xilinx products are not designed or intended to be fail-safe, or for use in
- * any application requiring fail-safe performance, such as life-support or
- * safety devices or systems, Class III medical devices, nuclear facilities,
- * applications related to the deployment of airbags, or any other applications
- * that could lead to death, personal injury, or severe property or
- * environmental damage (individually and collectively, "Critical
- * Applications"). Customer assumes the sole risk and liability of any use of
- * Xilinx products in Critical Applications, subject only to applicable laws
- * and regulations governing limitations on product liability.
- *
- * THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS PART OF THIS FILE
- * AT ALL TIMES.
- *
- ******************************************************************************/
+*
+* (c) Copyright 2010-2013 Xilinx, Inc. All rights reserved.
+*
+* This file contains confidential and proprietary information of Xilinx, Inc.
+* and is protected under U.S. and international copyright and other
+* intellectual property laws.
+*
+* DISCLAIMER
+* This disclaimer is not a license and does not grant any rights to the
+* materials distributed herewith. Except as otherwise provided in a valid
+* license issued to you by Xilinx, and to the maximum extent permitted by
+* applicable law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND WITH ALL
+* FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS,
+* IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+* MERCHANTABILITY, NON-INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE;
+* and (2) Xilinx shall not be liable (whether in contract or tort, including
+* negligence, or under any other theory of liability) for any loss or damage
+* of any kind or nature related to, arising under or in connection with these
+* materials, including for any direct, or any indirect, special, incidental,
+* or consequential loss or damage (including loss of data, profits, goodwill,
+* or any type of loss or damage suffered as a result of any action brought by
+* a third party) even if such damage or loss was reasonably foreseeable or
+* Xilinx had been advised of the possibility of the same.
+*
+* CRITICAL APPLICATIONS
+* Xilinx products are not designed or intended to be fail-safe, or for use in
+* any application requiring fail-safe performance, such as life-support or
+* safety devices or systems, Class III medical devices, nuclear facilities,
+* applications related to the deployment of airbags, or any other applications
+* that could lead to death, personal injury, or severe property or
+* environmental damage (individually and collectively, "Critical
+* Applications"). Customer assumes the sole risk and liability of any use of
+* Xilinx products in Critical Applications, subject only to applicable laws
+* and regulations governing limitations on product liability.
+*
+* THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS PART OF THIS FILE
+* AT ALL TIMES.
+*
+******************************************************************************/
 /*****************************************************************************/
 /**
  * ***************************************************************************
@@ -94,7 +94,7 @@
 #define NR_AUDIO_SAMPLES		(NR_SEC_TO_REC_PLAY*AUDIO_SAMPLING_RATE)
 
 /* Timeout loop counter for reset
-*/
+ */
 #define RESET_TIMEOUT_COUNTER	10000
 
 #define TEST_START_VALUE	0x0
@@ -139,6 +139,9 @@ static XIntc     	sIntc;
 static XUartLite 	sUartLite;
 static XGpio     	sGpio;
 static VideoCapture	sVideoCapt;
+
+static AudioClip sPortalSong = {};
+static bool sPortalSongLoaded = false;
 
 volatile int numInterrupts;
 
@@ -188,39 +191,78 @@ void uart_rec_audio(void) {
 }
 
 
-void uart_play_audio(void) {
-    play_audio();
-}
+ void uart_play_audio(void) {
+	 play_audio( (u32 *) AUDIO_BASE_ADDR, RECORD_LENGTH);
+ }
+
+
+ void loadSongIntoMemory(void) {
+	FATFS FatFs;
+	FIL FHandle;
+	UINT numBytesRead;
+	u32 *buff = (u32 *) AUDIO_BASE_ADDR;
+	FRESULT result;
+
+	if (f_mount(&FatFs, "", 0) != FR_OK) {
+	   	xil_printf("Failed to mount filesystem.\n\r");
+	   	return;
+	}
+
+	if ((result = f_open(&FHandle, SONG_PATH, FA_READ)) != FR_OK) {
+	   	xil_printf("Failed to f_open %s: %d .\n\r", SONG_PATH, result);
+		return;
+	}
+
+	if ((result = f_read(&FHandle, (void *) buff, MAX_SONG_LENGTH, &numBytesRead)) != FR_OK) {
+	   	xil_printf("Failed to f_read %s: %d.\n\r", SONG_PATH, result);
+		return;
+	}
+
+	sPortalSong.baseAddr = (u32 *) AUDIO_BASE_ADDR;
+	sPortalSong.length = numBytesRead;
+	sPortalSong.loaded = true;
+
+	xil_printf("Portal song is %d bytes long.\r\n", sPortalSong.length);
+ }
+
+
+ void playPortalSong(void) {
+	 if (sPortalSong.loaded) {
+		 play_audio(sPortalSong.baseAddr, sPortalSong.length >> 2);
+	 } else {
+		 xil_printf("Portal song not loaded yet!\r\n");
+	 }
+ }
 
 /*****************************************************************************/
 /**
- *
- * Main function
- *
- * This function is the main entry of the interrupt test. It does the following:
- *	Initialize the audio
- *	Initialize the debug uart
- *	Enable the interrupts
- *
- * @param	None
- *
- * @return
- *		- XST_SUCCESS if example finishes successfully
- *		- XST_FAILURE if example fails.
- *
- * @note		None.
- *
- ******************************************************************************/
+*
+* Main function
+*
+* This function is the main entry of the interrupt test. It does the following:
+*	Initialize the audio
+*	Initialize the debug uart
+*	Enable the interrupts
+*
+* @param	None
+*
+* @return
+*		- XST_SUCCESS if example finishes successfully
+*		- XST_FAILURE if example fails.
+*
+* @note		None.
+*
+******************************************************************************/
 int main(void)
 {
     init_platform();
 
-    xil_printf("\r\n--- Entering main() --- \r\n");
+	xil_printf("\r\n--- Entering main() --- \r\n");
 
     int status = XST_SUCCESS;
     status |= initialize_audio(&sIic, &sAxiAudioDma);
     status |= fnInitInterruptController(&sIntc);
-    status |= initialize_debug(&sUartLite);
+    status |= initialize_uart(&sUartLite);
     status |= initialize_video(&sVideoCapt, &sIntc);
     status |= initialize_targeting(&sAxiTargetingDma);
     status |= SetupSdGpio(&sGpio);
@@ -232,30 +274,34 @@ int main(void)
 
     fnEnableInterrupts(&sIntc, &ivt[0], sizeof(ivt)/sizeof(ivt[0]));
 
-    register_uart_response('t', test_fcn);
-    register_uart_response('r', uart_rec_audio);
-    register_uart_response('p', uart_play_audio);
-    register_uart_response('k', end_fcn);
-    register_uart_response('e', end_fcn);
-    register_uart_response('d', dump_mem);
+	register_uart_response("test", test_fcn);
+	register_uart_response("record", uart_rec_audio);
+	register_uart_response("play", uart_play_audio);
+	register_uart_response("kill", end_fcn);
+	register_uart_response("exit", end_fcn);
+	register_uart_response("dump", dump_mem);
 
-    // Commands to run self-tests
-    register_uart_response('l', LowLevelTest);
-    register_uart_response('h', HighLevelTest);
-    register_uart_response('z', LaserTest);
-    register_uart_response('m', MotorPatternTest);
-    register_uart_response('s', stopTest);
+	// Commands to run self-tests
+	register_uart_response("lowlevel", LowLevelTest);
+	register_uart_response("highlevel", HighLevelTest);
+	register_uart_response("lasertest", LaserTest);
+	register_uart_response("motortest", MotorPatternTest);
+	register_uart_response("stop", stopTest);
 
-    xil_printf("\r\n--- Done registering UART commands --- \r\n");
-    xil_printf("%08x\r\n", 0xDEADBEEF);
+	register_uart_response("load", loadSongIntoMemory);
 
-    while (do_run) {
-        MB_Sleep(1000);
-    }
+	register_uart_response("still_alive", playPortalSong);
 
-    xil_printf("\r\n--- Exiting main() --- \r\n");
+	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
-    return XST_SUCCESS;
+	xil_printf(PROMPT_STRING);
+	while (do_run) {
+		MB_Sleep(1000);
+	}
+
+	xil_printf("\r\n--- Exiting main() --- \r\n");
+
+	return XST_SUCCESS;
 }
 
 
@@ -299,10 +345,10 @@ static void LowLevelTest() {
 
     xil_printf("SD card initialized.\n\r");
 
-    if (disk_read(0, TestBuffer, 0, 4) != RES_OK) {
-        xil_printf("Failed to read first sector.\n\r");
-        return;
-    }
+  	if (disk_read(0, TestBuffer, 0, 3) != RES_OK) {
+    	xil_printf("Failed to read first sector.\n\r");
+    	return;
+  	}
 
     for (int i = 0; i < 128; i++) {
         for (int j = 0; j < 4; j++) {
@@ -339,10 +385,11 @@ static void HighLevelTest() {
 
     f_close(&FHandle);
 
-    if (f_open(&FHandle, "bar.txt", FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
-        xil_printf("Failed to open bar.txt.\n\r");
-        return;
-    }
+    /*
+	if (f_open(&FHandle, "bar.txt", FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
+    	xil_printf("Failed to open bar.txt.\n\r");
+		return;
+	}
 
     if (f_write(&FHandle, "Hello!\r\n", 8, &BytesWritten) != FR_OK) {
         xil_printf("Failed to write to bar.txt.\n\r");
@@ -354,11 +401,10 @@ static void HighLevelTest() {
         return;
     }
 
-    f_close(&FHandle);
+	f_close(&FHandle);
+	*/
 
-    f_mount(NULL, "", 0);
-
-    xil_printf("Test Successful!\n\r");
+	xil_printf("Test Successful!\n\r");
 }
 
 

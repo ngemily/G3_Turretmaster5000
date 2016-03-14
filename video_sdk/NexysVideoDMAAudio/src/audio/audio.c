@@ -624,7 +624,7 @@ void fnAudioRecord(XAxiDma AxiDma, u32 u32NrSamples)
 		xil_printf("\r\nEnter Record function");
 	}
 
-	uTransferVariable.l = XAxiDma_SimpleTransfer(&AxiDma,(u32) MEM_BASE_ADDR, 5*u32NrSamples, XAXIDMA_DEVICE_TO_DMA);
+	uTransferVariable.l = XAxiDma_SimpleTransfer(&AxiDma,(u32) AUDIO_BASE_ADDR, 5*u32NrSamples, XAXIDMA_DEVICE_TO_DMA);
 	if (uTransferVariable.l != XST_SUCCESS)
 	{
 		if (audio_is_verbose)
@@ -657,7 +657,7 @@ void fnAudioRecord(XAxiDma AxiDma, u32 u32NrSamples)
  *
  * @return	none.
  *****************************************************************************/
-void fnAudioPlay(XAxiDma AxiDma, u32 u32NrSamples)
+void fnAudioPlay(XAxiDma AxiDma, u32 baseAddr, u32 u32NrSamples)
 {
 	union ubitField uTransferVariable;
 
@@ -666,7 +666,7 @@ void fnAudioPlay(XAxiDma AxiDma, u32 u32NrSamples)
 		xil_printf("\r\nEnter Playback function");
 	}
 
-	uTransferVariable.l = XAxiDma_SimpleTransfer(&AxiDma,(u32) MEM_BASE_ADDR, 5*u32NrSamples, XAXIDMA_DMA_TO_DEVICE);
+	uTransferVariable.l = XAxiDma_SimpleTransfer(&AxiDma, baseAddr, 5*u32NrSamples, XAXIDMA_DMA_TO_DEVICE);
 	if (uTransferVariable.l != XST_SUCCESS)
 	{
 		if (audio_is_verbose)

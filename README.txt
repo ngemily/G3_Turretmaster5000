@@ -12,3 +12,19 @@ Steps to generate the project:
    "turretcontrol_bsp" projects.
 7) Generate the linker script for the "turretcontrol" project.
 8) Build the sources and program the board as per the tutorials.
+
+
+
+How to generate files that play correctly on the board:
+1) Open the source sound file in Wavosaur (mp3 or wav)
+2) Crop to the time period you want to save.
+3) If necessary, split to stereo.
+4) resample to 96000 Hz (96 KHz)
+5) adjust the volume as necessary using process > normalize (-15db seems normal)
+5) file > export > export raw binary. Select the following options:
+    - signed
+    - 16 bits per sample
+    - Big endian
+
+When read off of the Sd card into memory and played, it shouldn't sound like 
+terrible static.
