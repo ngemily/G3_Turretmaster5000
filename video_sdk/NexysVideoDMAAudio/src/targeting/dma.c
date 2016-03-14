@@ -9,10 +9,7 @@
 
 /************************** Variable Definitions *****************************/
 
-extern XAxiDma_Config *pCfgPtr;
-
-volatile int audio_dma_error = 0;
-void (*dma_operation_colmplete_cb)(void);
+volatile int targeting_dma_error = 0;
 
 /******************************************************************************
  * This is the Interrupt Handler from the Stream to the MemoryMap. It is called
@@ -23,7 +20,7 @@ void (*dma_operation_colmplete_cb)(void);
  * @return	none
  *
  *****************************************************************************/
-void fnAudioS2MMInterruptHandler (void *Callback)
+void fnTargS2MMInterruptHandler (void *Callback)
 {
 	u32 IrqStatus;
 	int TimeOut;
@@ -46,7 +43,7 @@ void fnAudioS2MMInterruptHandler (void *Callback)
 	// processing.
 	if (IrqStatus & XAXIDMA_IRQ_ERROR_MASK)
 	{
-		audio_dma_error = 1;
+		targeting_dma_error = 1;
 		XAxiDma_Reset(AxiDmaInst);
 		TimeOut = 1000;
 		while (TimeOut)
@@ -57,13 +54,12 @@ void fnAudioS2MMInterruptHandler (void *Callback)
 			}
 			TimeOut -= 1;
 		}
-		dma_operation_colmplete_cb();
 		return;
 	}
 
 	if ((IrqStatus & XAXIDMA_IRQ_IOC_MASK))
 	{
-		dma_operation_colmplete_cb();
+		//TODO
 	}
 }
 
@@ -76,7 +72,7 @@ void fnAudioS2MMInterruptHandler (void *Callback)
  * @return	none
  *
  *****************************************************************************/
-void fnAudioMM2SInterruptHandler (void *Callback)
+void fnTargMM2SInterruptHandler (void *Callback)
 {
 
 	u32 IrqStatus;
@@ -100,7 +96,7 @@ void fnAudioMM2SInterruptHandler (void *Callback)
 	// processing.
 	if (IrqStatus & XAXIDMA_IRQ_ERROR_MASK)
 	{
-		audio_dma_error = 1;
+		targeting_dma_error = 1;
 		XAxiDma_Reset(AxiDmaInst);
 		TimeOut = 1000;
 		while (TimeOut)
@@ -111,13 +107,12 @@ void fnAudioMM2SInterruptHandler (void *Callback)
 			}
 			TimeOut -= 1;
 		}
-		dma_operation_colmplete_cb();
 		return;
 	}
 
 	if ((IrqStatus & XAXIDMA_IRQ_IOC_MASK))
 	{
-		dma_operation_colmplete_cb();
+		//TODO
 	}
 }
 
@@ -129,14 +124,14 @@ void fnAudioMM2SInterruptHandler (void *Callback)
  * @return	XST_SUCCESS - if configuration was successful
  * 			XST_FAILURE - when the specification are not met
  *****************************************************************************/
-XStatus fnConfigAudioDma(XAxiDma *AxiDma)
+XStatus fnConfigTargetingDma(XAxiDma *AxiDma)
 {
 	int Status;
 	XAxiDma_Config *pCfgPtr;
 
 	//Make sure the DMA hardware is present in the project
 	//Ensures that the DMA hardware has been loaded
-	pCfgPtr = XAxiDma_LookupConfig(XPAR_AXIDMA_0_DEVICE_ID);
+	pCfgPtr = XAxiDma_LookupConfig(XPAR_AXIDMA_1_DEVICE_ID);
 	if (!pCfgPtr)
 	{
 		return XST_FAILURE;

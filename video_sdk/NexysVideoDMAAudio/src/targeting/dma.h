@@ -5,8 +5,8 @@
  *      Author: ROHegbeC
  */
 
-#ifndef DMA_AUDIO_H_
-#define DMA_AUDIO_H_
+#ifndef DMA_TARGETING_H_
+#define DMA_TARGETING_H_
 
 #include "xparameters.h"
 #include "xil_printf.h"
@@ -17,8 +17,8 @@
 
 /************************** Function Definitions *****************************/
 
-void fnAudioS2MMInterruptHandler (void *Callback);
-void fnAudioMM2SInterruptHandler (void *Callback);
-XStatus fnConfigAudioDma(XAxiDma *AxiDma);
+void fnTargS2MMInterruptHandler (void *Callback);
+void fnTargMM2SInterruptHandler (void *Callback);
+XStatus fnConfigTargetingDma(XAxiDma *AxiDma);
 
 #endif /* DMA_H_ */

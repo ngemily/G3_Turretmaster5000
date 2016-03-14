@@ -152,7 +152,7 @@ XStatus video_set_output_frame(u32 idx) {
 }
 
 XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res) {
-    VideoMode *mode = NULL;
+    const VideoMode *mode = NULL;
     switch (res) {
     case RES_1080P:
         mode = &VMODE_1920x1080;

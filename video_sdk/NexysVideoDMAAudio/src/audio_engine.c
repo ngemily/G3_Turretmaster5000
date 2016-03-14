@@ -53,7 +53,7 @@ XStatus initialize_audio(XIic *IicPtr, XAxiDma *AxiDmaPtr) {
     }
 
     if (XST_SUCCESS == status) {
-        status = fnConfigDma(AxiDmaPtr);
+        status = fnConfigAudioDma(AxiDmaPtr);
     }
 
     if (XST_SUCCESS == status) {

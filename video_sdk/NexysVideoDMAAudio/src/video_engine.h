@@ -48,7 +48,7 @@ XStatus video_set_input_enabled(int enable);
 XStatus video_set_input_frame(u32 idx);
 XStatus video_set_output_frame(u32 idx);
 XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res);
-void    print_video_info(void)
+void    print_video_info(void);
 
 // Demo leftovers
 void VideoISR(void *callBackRef, void *pVideo);

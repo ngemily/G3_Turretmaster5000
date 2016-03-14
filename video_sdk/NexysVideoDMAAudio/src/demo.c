@@ -48,6 +48,7 @@
 
 #include "audio/audio.h"
 #include "dma/dma.h"
+#include "targeting/dma.h"
 #include "intc/intc.h"
 #include "iic/iic.h"
 #include "diskio/diskio.h"
@@ -60,6 +61,7 @@
 #include "audio_engine.h"
 #include "uart_engine.h"
 #include "video_engine.h"
+#include "targeting_engine.h"
 
 /***************************** Include Files *********************************/
 
@@ -131,7 +133,8 @@ static void stopTest();
  */
 
 static XIic      	sIic;
-static XAxiDma   	sAxiDma;
+static XAxiDma   	sAxiAudioDma;
+static XAxiDma   	sAxiTargetingDma;
 static XIntc     	sIntc;
 static XUartLite 	sUartLite;
 static XGpio     	sGpio;
@@ -144,13 +147,17 @@ const ivt_t ivt[] = {
     //IIC
     {XPAR_MICROBLAZE_0_AXI_INTC_AXI_IIC_0_IIC2INTC_IRPT_INTR,     (XInterruptHandler)XIic_InterruptHandler, &sIic},
     //DMA Stream to MemoryMap Interrupt handler
-    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_S2MM_INTROUT_INTR,      (XInterruptHandler)fnS2MMInterruptHandler, &sAxiDma},
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_S2MM_INTROUT_INTR,      (XInterruptHandler)fnAudioS2MMInterruptHandler, &sAxiAudioDma},
     //DMA MemoryMap to Stream Interrupt handler
-    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_MM2S_INTROUT_INTR,      (XInterruptHandler)fnMM2SInterruptHandler, &sAxiDma},
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_MM2S_INTROUT_INTR,      (XInterruptHandler)fnAudioMM2SInterruptHandler, &sAxiAudioDma},
+    //DMA Stream to MemoryMap Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_1_S2MM_INTROUT_INTR,      (XInterruptHandler)fnTargS2MMInterruptHandler, &sAxiTargetingDma},
+    //DMA MemoryMap to Stream Interrupt handler
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_1_MM2S_INTROUT_INTR,      (XInterruptHandler)fnTargMM2SInterruptHandler, &sAxiTargetingDma},
     //UART Lite Interrupt handler
     {XPAR_MICROBLAZE_0_AXI_INTC_AXI_UARTLITE_0_INTERRUPT_INTR,    (XInterruptHandler)XUartLite_InterruptHandler, &sUartLite},
     //Video Capture Interrupt handler
-    {XPAR_MICROBLAZE_0_AXI_INTC_V_TC_1_IRQ_INTR,                   (XInterruptHandler)XVtc_IntrHandler, &(sVideoCapt.vtc)},
+    {XPAR_MICROBLAZE_0_AXI_INTC_V_TC_1_IRQ_INTR,                  (XInterruptHandler)XVtc_IntrHandler, &(sVideoCapt.vtc)},
     //Video GPIO Interrupt handler
     {XPAR_MICROBLAZE_0_AXI_INTC_AXI_GPIO_VIDEO_IP2INTC_IRPT_INTR, (XInterruptHandler)GpioIsr, &sVideoCapt},
 };
@@ -211,10 +218,11 @@ int main(void)
     xil_printf("\r\n--- Entering main() --- \r\n");
 
     int status = XST_SUCCESS;
-    status |= initialize_audio(&sIic, &sAxiDma);
+    status |= initialize_audio(&sIic, &sAxiAudioDma);
     status |= fnInitInterruptController(&sIntc);
     status |= initialize_debug(&sUartLite);
     status |= initialize_video(&sVideoCapt, &sIntc);
+    status |= initialize_targeting(&sAxiTargetingDma);
     status |= SetupSdGpio(&sGpio);
 
     if (status != XST_SUCCESS) {
@@ -237,8 +245,6 @@ int main(void)
     register_uart_response('z', LaserTest);
     register_uart_response('m', MotorPatternTest);
     register_uart_response('s', stopTest);
-
-    register_uart_response('v', run_video_demo);
 
     xil_printf("\r\n--- Done registering UART commands --- \r\n");
     xil_printf("%08x\r\n", 0xDEADBEEF);
