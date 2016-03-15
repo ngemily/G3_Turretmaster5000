@@ -74,6 +74,7 @@
 	
     wire [C_S_AXIS_MM2S_TDATA_WIDTH-1 : 0] wire_rx2lite;
     wire [C_M_AXIS_S2MM_TDATA_WIDTH-1 : 0] wire_lite2tx;
+        wire rx_in_en;
     wire [31:0] curr_pix_row;
     wire [31:0] curr_pix_col;
     wire rx_en;
@@ -95,11 +96,12 @@
 	) image_processing_ip_v1_0_S_AXI_LITE_inst (
         .buf_from_rx(wire_rx2lite),
         .buf_to_tx(wire_lite2tx),
-        .rxtx_en(rxtx_en),
-        .rx_load(rx_load),
-        .tx_flush(tx_flush),
-	    .curr_pix_row(curr_pix_row),
-        .curr_pix_col(curr_pix_col),
+        .rx_in_en(rx_in_en),
+	//.rxtx_en(rxtx_en),
+        //.rx_load(rx_load),
+        //.tx_flush(tx_flush),
+	//    .curr_pix_row(curr_pix_row),
+        //.curr_pix_col(curr_pix_col),
 		.S_AXI_ACLK(s_axi_lite_aclk),
 		.S_AXI_ARESETN(s_axi_lite_aresetn),
 		.S_AXI_AWADDR(s_axi_lite_awaddr),
@@ -131,11 +133,12 @@
         .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXIS_MM2S_inst (
 	    .buf_outof_rx(wire_rx2lite),
-        .rx_en(rx_en),
-        .tx_en(tx_en),
-        .tx_mst_exec_state(tx_mst_exec_state),
-	    .curr_pix_row(curr_pix_row),
-	    .curr_pix_col(curr_pix_col),
+        	    .rx_in_en(rx_in_en),
+	//.rx_en(rx_en),
+        //.tx_en(tx_en),
+        //.tx_mst_exec_state(tx_mst_exec_state),
+	//    .curr_pix_row(curr_pix_row),
+	//    .curr_pix_col(curr_pix_col),
 		.S_AXIS_ACLK(s_axis_mm2s_aclk),
 		.S_AXIS_ARESETN(s_axis_mm2s_aresetn),
 		.S_AXIS_TREADY(s_axis_mm2s_tready),
@@ -153,9 +156,10 @@
 		.FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_M_AXIS_S2MM_inst (
         .buf_into_tx(wire_lite2tx),
-        .rx_en(rx_en),
-        .tx_en(tx_en),
-        .rx_mst_exec_state(rx_mst_exec_state),
+        .rx_in_en(rx_in_en),        
+	//.rx_en(rx_en),
+        //.tx_en(tx_en),
+        //.rx_mst_exec_state(rx_mst_exec_state),
 		.M_AXIS_ACLK(m_axis_s2mm_aclk),
 		.M_AXIS_ARESETN(m_axis_s2mm_aresetn),
 		.M_AXIS_TVALID(m_axis_s2mm_tvalid),

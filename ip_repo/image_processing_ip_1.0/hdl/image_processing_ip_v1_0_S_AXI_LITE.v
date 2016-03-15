@@ -27,11 +27,13 @@
 		// Users to add ports here
         input wire  [AXIS_TDATA_WIDTH-1 : 0] buf_from_rx,
         output reg  [AXIS_TDATA_WIDTH-1 : 0] buf_to_tx,
-        input wire [31:0] curr_pix_row, // row of current input pixel in frame
-        input wire [31:0] curr_pix_col, // column of current input pixel in frame
-        input wire rxtx_en,
-        input wire rx_load,
-        input wire tx_flush,
+        input wire rx_in_en,
+        
+        //input wire [31:0] curr_pix_row, // row of current input pixel in frame
+        //input wire [31:0] curr_pix_col, // column of current input pixel in frame
+        //input wire rxtx_en,
+        //input wire rx_load,
+        //input wire tx_flush,
         
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -614,7 +616,7 @@
             
     integer i;
     always @(posedge S_AXI_ACLK) begin
-        if(rxtx_en || rx_load || tx_flush) begin
+        if (rx_in_en) begin //(rxtx_en || rx_load || tx_flush)
             buf0[0] <= buf_from_rx;
             buf1[0] <= buf0[WORDS_PER_LINE - 1];
             buf2[0] <= buf1[WORDS_PER_LINE - 1];
