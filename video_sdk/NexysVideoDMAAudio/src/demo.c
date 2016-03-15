@@ -48,7 +48,7 @@
 
 #include "audio/audio.h"
 #include "dma/dma.h"
-#include "targeting/dma.h"
+#include "targeting/vdma.h"
 #include "intc/intc.h"
 #include "iic/iic.h"
 #include "diskio/diskio.h"
@@ -134,7 +134,7 @@ static void stopTest();
 
 static XIic      	sIic;
 static XAxiDma   	sAxiAudioDma;
-static XAxiDma   	sAxiTargetingDma;
+static XAxiVdma   	sAxiTargetingDma;
 static XIntc     	sIntc;
 static XUartLite 	sUartLite;
 static XGpio     	sGpio;
@@ -154,9 +154,9 @@ const ivt_t ivt[] = {
     //DMA MemoryMap to Stream Interrupt handler
     {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_0_MM2S_INTROUT_INTR,      (XInterruptHandler)fnAudioMM2SInterruptHandler, &sAxiAudioDma},
     //DMA Stream to MemoryMap Interrupt handler
-    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_1_S2MM_INTROUT_INTR,      (XInterruptHandler)fnTargS2MMInterruptHandler, &sAxiTargetingDma},
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_VDMA_1_S2MM_INTROUT_INTR,     (XInterruptHandler)XAxiVdma_WriteIntrHandler, &sAxiTargetingDma},
     //DMA MemoryMap to Stream Interrupt handler
-    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_DMA_1_MM2S_INTROUT_INTR,      (XInterruptHandler)fnTargMM2SInterruptHandler, &sAxiTargetingDma},
+    {XPAR_MICROBLAZE_0_AXI_INTC_AXI_VDMA_1_MM2S_INTROUT_INTR,     (XInterruptHandler)XAxiVdma_ReadIntrHandler, &sAxiTargetingDma},
     //UART Lite Interrupt handler
     {XPAR_MICROBLAZE_0_AXI_INTC_AXI_UARTLITE_0_INTERRUPT_INTR,    (XInterruptHandler)XUartLite_InterruptHandler, &sUartLite},
     //Video Capture Interrupt handler
@@ -179,7 +179,7 @@ void end_fcn(void) {
 
 void dump_mem(void) {
     int i;
-    char *ptr = (char *) MEM_BASE_ADDR;
+    char *ptr = (char *) FRAMES_BASE_ADDR;
     for (i=0; i<100000; i++) {
         XUartLite_SendByte(sUartLite.RegBaseAddress, *(ptr+i));
     }
@@ -233,6 +233,41 @@ void uart_rec_audio(void) {
 		 xil_printf("Portal song not loaded yet!\r\n");
 	 }
  }
+
+static void passthroughHdmi(void) {
+    if (XST_SUCCESS != video_set_output_resolution(RES_720P)) {
+        xil_printf("Error Setting resolution!");
+    }
+    video_set_input_frame(2);
+    video_set_output_frame(2);
+}
+
+static void runImageProcessing(void) {
+    video_set_input_frame(0);
+    MB_Sleep(100); // TESTING ONLY; CHAGE TO INTERRUPT
+    video_set_input_frame(2);
+    video_set_output_frame(1);
+    targeting_begin_transfer(&sAxiTargetingDma);
+}
+
+static void df0(void) {
+    video_set_output_frame(0);
+}
+static void df1(void) {
+    video_set_output_frame(1);
+}
+static void df2(void) {
+    video_set_output_frame(2);
+}
+static void vf0(void) {
+	video_set_input_frame(0);
+}
+static void vf1(void) {
+	video_set_input_frame(1);
+}
+static void vf2(void) {
+    video_set_input_frame(2);
+}
 
 /*****************************************************************************/
 /**
@@ -291,6 +326,17 @@ int main(void)
 	register_uart_response("load", loadSongIntoMemory);
 
 	register_uart_response("still_alive", playPortalSong);
+
+	register_uart_response("passthrough", passthroughHdmi);
+	register_uart_response("runip",       runImageProcessing);
+	register_uart_response("videoinfo",   print_video_info);
+	register_uart_response("df1",         df1);
+	register_uart_response("df2",         df2);
+	register_uart_response("df0",         df0);
+	register_uart_response("vf1",         vf1);
+	register_uart_response("vf2",         vf2);
+	register_uart_response("vf0",         vf0);
+	register_uart_response("ipinfo",      print_ip_info);
 
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 

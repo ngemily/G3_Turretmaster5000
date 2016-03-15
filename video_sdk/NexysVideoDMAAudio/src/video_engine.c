@@ -54,9 +54,9 @@ char fRefresh; //flag used to trigger a refresh of the Menu on video detect
 /*
  * Framebuffers for video data
  */
-//u8 frameBuf[DISPLAY_NUM_FRAMES][DEMO_MAX_FRAME];
-u8 *frameBuf = (u8*) MEM_BASE_ADDR;
-u8 *pFrames[DISPLAY_NUM_FRAMES]; //array of pointers to the frame buffers
+//u8 frameBuf[NUM_FRAME_BUFFER][DEMO_MAX_FRAME];
+u8 *frameBuf = (u8 *) FRAMES_BASE_ADDR;
+u8 *pFrames[NUM_FRAME_BUFFER]; //array of pointers to the frame buffers
 
 
 void DemoPrintTest(u8 *frame, u32 width, u32 height, u32 stride, int pattern);
@@ -76,9 +76,10 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
     /*
      * Initialize an array of pointers to the 3 frame buffers
      */
-    for (i = 0; i < DISPLAY_NUM_FRAMES; i++)
+    for (i = 0; i < NUM_FRAME_BUFFER; i++)
     {
-        pFrames[i] = frameBuf + (i*DEMO_MAX_FRAME);
+        pFrames[i] = frameBuf + (i*FRAME_BUFFER_SIZE);
+        xil_printf("pFrames[%d]: %08x\n\r", i, pFrames[i]);
     }
 
     /*
@@ -100,7 +101,8 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
     /*
      * Initialize the Display controller and start it
      */
-    Status = DisplayInitialize(&dispCtrl, &vdma, DISP_VTC_ID, DYNCLK_BASEADDR, pFrames, DEMO_STRIDE);
+    Status = DisplayInitialize(&dispCtrl, &vdma, DISP_VTC_ID, DYNCLK_BASEADDR,
+                                pFrames, FRAME_BUFFER_STRIDE);
     if (Status != XST_SUCCESS)
     {
         xil_printf("Display Ctrl initialization failed during demo initialization%d\r\n", Status);
@@ -117,7 +119,7 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
      * Initialize the Video Capture device
      */
     Status = VideoInitialize(videoPtr, intcPtr, &vdma, VID_GPIO_ID, VID_VTC_ID,
-            VID_VTC_IRPT_ID, pFrames, DEMO_STRIDE, DEMO_START_ON_DET);
+            VID_VTC_IRPT_ID, pFrames, FRAME_BUFFER_STRIDE, DEMO_START_ON_DET);
     if (Status != XST_SUCCESS)
     {
         xil_printf("Video Ctrl initialization failed during demo initialization%d\r\n", Status);
@@ -136,7 +138,7 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
 }
 
 XStatus video_set_input_frame(u32 idx) {
-    if (idx >= DISPLAY_NUM_FRAMES) {
+    if (idx >= NUM_FRAME_BUFFER) {
         return XST_FAILURE;
     }
 
@@ -144,7 +146,7 @@ XStatus video_set_input_frame(u32 idx) {
 }
 
 XStatus video_set_output_frame(u32 idx) {
-    if (idx >= DISPLAY_NUM_FRAMES) {
+    if (idx >= NUM_FRAME_BUFFER) {
         return XST_FAILURE;
     }
 
@@ -158,6 +160,7 @@ XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res) {
         mode = &VMODE_1920x1080;
         break;
     case RES_720P:
+    	print("720p Selected\n\r");
         mode = &VMODE_1280x720;
         break;
     case RES_480P:
@@ -291,7 +294,7 @@ void DemoPrintTest(u8 *frame, u32 width, u32 height, u32 stride, int pattern)
              * Flush the framebuffer memory range to ensure changes are written to the
              * actual memory, and therefore accessible by the VDMA.
              */
-            Xil_DCacheFlushRange((unsigned int) frame, DEMO_MAX_FRAME);
+            Xil_DCacheFlushRange((unsigned int) frame, FRAME_BUFFER_SIZE);
             break;
         case DEMO_PATTERN_1:
 
@@ -355,7 +358,7 @@ void DemoPrintTest(u8 *frame, u32 width, u32 height, u32 stride, int pattern)
              * Flush the framebuffer memory range to ensure changes are written to the
              * actual memory, and therefore accessible by the VDMA.
              */
-            Xil_DCacheFlushRange((unsigned int) frame, DEMO_MAX_FRAME);
+            Xil_DCacheFlushRange((unsigned int) frame, FRAME_BUFFER_SIZE);
             break;
         default :
             xil_printf("Error: invalid pattern passed to DemoPrintTest");
