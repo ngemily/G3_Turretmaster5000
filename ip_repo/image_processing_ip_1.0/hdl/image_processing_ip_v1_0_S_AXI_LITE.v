@@ -1,21 +1,20 @@
-
 `timescale 1 ns / 1 ps
 
-//`include "global.vh"
+`include "global.vh"
 
-`define THRESHOLD 150
-`define MAX 255
-`define MIN 0
+//`define THRESHOLD 150
+//`define MAX 255
+//`define MIN 0
 //`define MEM_SIZE 'h10_0000
-`define WORD_SIZE 8
-`define PIXEL_SIZE 24
+//`define WORD_SIZE 8
+//`define PIXEL_SIZE 24
 
 	module image_processing_ip_v1_0_S_AXI_LITE #
 	(
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
-		parameter integer AXIS_TDATA_WIDTH = 32,
+		parameter integer AXIS_TDATA_WIDTH = 24,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -28,8 +27,12 @@
 		// Users to add ports here
         input wire  [AXIS_TDATA_WIDTH-1 : 0] buf_from_rx,
         output reg  [AXIS_TDATA_WIDTH-1 : 0] buf_to_tx,
-        input wire rx_in_en,
-
+        input wire [31:0] curr_pix_row, // row of current input pixel in frame
+        input wire [31:0] curr_pix_col, // column of current input pixel in frame
+        input wire rxtx_en,
+        input wire rx_load,
+        input wire tx_flush,
+        
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -611,7 +614,7 @@
             
     integer i;
     always @(posedge S_AXI_ACLK) begin
-        if(rx_in_en) begin
+        if(rxtx_en || rx_load || tx_flush) begin
             buf0[0] <= buf_from_rx;
             buf1[0] <= buf0[WORDS_PER_LINE - 1];
             buf2[0] <= buf1[WORDS_PER_LINE - 1];
@@ -626,15 +629,17 @@
             buf_to_tx[7:0] <= buf2[WORDS_PER_LINE-1][15:8];     // puts blue into green
             buf_to_tx[15:8] <= buf2[WORDS_PER_LINE-1][7:0];     // puts green into blue
             buf_to_tx[23:16] <= buf2[WORDS_PER_LINE-1][23:16];  // keeps red the same
-            buf_to_tx[31:24] <= buf2[WORDS_PER_LINE-1][31:24];  // blank
 
         end    
     end
-
-
+    
+    /*
+    r_minus_gb_threshold    #(.THRESHOLD(`THRESHOLD), .AXIS_TDATA_WIDTH(AXIS_TDATA_WIDTH))
+    P00                     (.pixel(pixel), .q(diff1));
+*/
     /*
     always @(posedge S_AXI_ACLK) begin
-	if ((diff1 > threshold) & (diff2 > threshold) & (diff3 > threshold)) begin
+	if ((diff1 & diff2 & diff3)) begin
 	    if (done == 1)
 		start <= current_pixel;
 		count <= count + 1;
@@ -656,13 +661,18 @@
     /*
     * Take the difference of the red, blue, and green components.
     */
-    module r_minus_gb (
-        input [`WORD_SIZE - 1:0] R,
-        input [`WORD_SIZE - 1:0] G,
-        input [`WORD_SIZE - 1:0] B,
-        output [`WORD_SIZE - 1:0] diff
+    module r_minus_gb_threshold #(
+        parameter THRESHOLD = `THRESHOLD,
+        parameter AXIS_TDATA_WIDTH = 24
+    ) (
+        input [AXIS_TDATA_WIDTH-1:0] pixel,
+        output q
     );
-        assign diff = R - G - B;
+        wire [`WORD_SIZE - 1:0] R = pixel[7:0];
+        wire [`WORD_SIZE - 1:0] G = pixel[15:8];
+        wire [`WORD_SIZE - 1:0] B = pixel[23:16];
+        wire [`WORD_SIZE - 1:0] d = R - G - B;
+        assign q = (d > THRESHOLD) ? 1 : 0;
     endmodule
     
     
