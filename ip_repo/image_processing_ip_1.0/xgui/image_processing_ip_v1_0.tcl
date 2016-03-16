@@ -46,15 +46,6 @@ proc validate_PARAM_VALUE.FRAME_WIDTH { PARAM_VALUE.FRAME_WIDTH } {
 	return true
 }
 
-proc update_PARAM_VALUE.WORDS_PER_LINE { PARAM_VALUE.WORDS_PER_LINE } {
-	# Procedure called to update WORDS_PER_LINE when any of the dependent parameters in the arguments change
-}
-
-proc validate_PARAM_VALUE.WORDS_PER_LINE { PARAM_VALUE.WORDS_PER_LINE } {
-	# Procedure called to validate WORDS_PER_LINE
-	return true
-}
-
 proc update_PARAM_VALUE.C_S_AXI_LITE_DATA_WIDTH { PARAM_VALUE.C_S_AXI_LITE_DATA_WIDTH } {
 	# Procedure called to update C_S_AXI_LITE_DATA_WIDTH when any of the dependent parameters in the arguments change
 }
@@ -157,10 +148,5 @@ proc update_MODELPARAM_VALUE.FRAME_HEIGHT { MODELPARAM_VALUE.FRAME_HEIGHT PARAM_
 proc update_MODELPARAM_VALUE.AXIS_TDATA_WIDTH { MODELPARAM_VALUE.AXIS_TDATA_WIDTH PARAM_VALUE.AXIS_TDATA_WIDTH } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
 	set_property value [get_property value ${PARAM_VALUE.AXIS_TDATA_WIDTH}] ${MODELPARAM_VALUE.AXIS_TDATA_WIDTH}
-}
-
-proc update_MODELPARAM_VALUE.WORDS_PER_LINE { MODELPARAM_VALUE.WORDS_PER_LINE PARAM_VALUE.WORDS_PER_LINE } {
-	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-	set_property value [get_property value ${PARAM_VALUE.WORDS_PER_LINE}] ${MODELPARAM_VALUE.WORDS_PER_LINE}
 }
 

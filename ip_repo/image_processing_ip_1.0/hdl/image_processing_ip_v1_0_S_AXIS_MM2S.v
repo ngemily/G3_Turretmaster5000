@@ -14,16 +14,10 @@
 	)
 	(
 		// Users to add ports here
-        output reg [C_S_AXIS_TDATA_WIDTH-1 : 0] buf_outof_rx,
-        output reg rx_in_en,
-        //input wire dma_txready,
-        
-        //output reg [31:0] curr_pix_row, // row of current input pixel in frame
-        //output reg [31:0] curr_pix_col, // column of current input pixel in frame
-        //output wire rx_en,
-        //input wire  tx_en,
-        //input wire tx_mst_exec_state,
-
+        output reg [bit_num-1:0] write_pointer,
+        input wire [bit_num-1:0] read_pointer,
+        input wire tx_enable,
+	    output reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -52,7 +46,7 @@
 	endfunction
 
 	// Total number of input data.
-	localparam NUMBER_OF_INPUT_WORDS = FRAME_WIDTH*FRAME_HEIGHT;
+	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH*FRAME_HEIGHT;
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);
 	// Define the states of state machine
@@ -72,7 +66,7 @@
 	// FIFO full flag
 	reg fifo_full_flag;
 	// FIFO write pointer
-	reg [bit_num-1:0] write_pointer;
+	//reg [bit_num-1:0] write_pointer;
 	// sink has accepted all the streaming data and stored in FIFO
 	  reg writes_done;
 	// I/O Connections assignments
@@ -120,114 +114,67 @@
 	// 
 	// The example design sink is always ready to accept the S_AXIS_TDATA  until
 	// the FIFO is not filled with NUMBER_OF_INPUT_WORDS number of input words.
-	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer <= NUMBER_OF_INPUT_WORDS-1));
-	
-	// FIFO write enable generation
-	assign fifo_wren = S_AXIS_TVALID && axis_tready;
-
-    //wire rx_mst_exec_state = mst_exec_state; //
-    //wire rxtx_en = rx_en && tx_en; // 
-    //wire rx_load = rx_en && (tx_mst_exec_state == 2'b01); // tx_mst_exec_state == INIT_COUNTER
-    //wire tx_flush = tx_en && (rx_mst_exec_state == IDLE); //
-
+	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer <= NUMBER_OF_INPUT_WORDS-1) && (write_pointer < read_pointer + FRAME_WIDTH));
 
 	always@(posedge S_AXIS_ACLK)
 	begin
-	    if(!S_AXIS_ARESETN)
+	  if(!S_AXIS_ARESETN)
 	    begin
-	        write_pointer <= 0;
-	        writes_done <= 1'b0;
+	      write_pointer <= 0;
+	      writes_done <= 1'b0;
 	    end  
-	    else
-	    //begin
-	        if (write_pointer < NUMBER_OF_INPUT_WORDS)
-	        begin
-	            if (fifo_wren)//(rxtx_en || rx_load)
+	  else
+	    if (write_pointer <= NUMBER_OF_INPUT_WORDS-1)
+	      begin
+	        if (fifo_wren)
+	          begin
+	            // write pointer is incremented after every write to the FIFO
+	            // when FIFO write signal is enabled.
+	            write_pointer <= write_pointer + 1;
+	            writes_done <= 1'b0;
+	          end
+	          if ((write_pointer == NUMBER_OF_INPUT_WORDS-1)|| S_AXIS_TLAST)
 	            begin
-	                // write pointer is incremented after every write to the FIFO
-	                // when FIFO write signal is enabled.
-	                write_pointer <= write_pointer + 1;
-	                writes_done <= 1'b0;
+	              // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data 
+	              // has been written to the FIFO which is also marked by S_AXIS_TLAST(kept for optional usage).
+	              writes_done <= 1'b1;
 	            end
-	            //else 
-	            //begin 
-	            //    write_counter <= write_counter;
-                    //writes_done <= 1'b0;
-                //end
-            //end
-            if ((write_pointer == NUMBER_OF_INPUT_WORDS-1)|| S_AXIS_TLAST)
-            begin
-                // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data 
-                // has been written to the FIFO which is also marked by S_AXIS_TLAST(kept for optional usage).
-                writes_done <= 1'b1;
-	            //write_counter <= 0;
-            end
-	    end  
+	      end  
 	end
 
+	// FIFO write enable generation
+	assign fifo_wren = S_AXIS_TVALID && axis_tready;
 
 	// FIFO Implementation
-    
-    
-    //reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : NUMBER_OF_INPUT_WORDS-1];
-    
-    // Streaming input data is stored in FIFO
-    
-    /*
-    
-    always @( posedge S_AXIS_ACLK )
-    begin
-      if (fifo_wren)// && S_AXIS_TSTRB[byte_index])
-        begin
-          stream_data_fifo[write_pointer] <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
-        end  
-    end 
-    
-    */
-     
-	// Add user logic here    
-    reg tlast_latch;
-    wire tlast_edge;
-    
-    
-    always @( posedge S_AXIS_ACLK )
-    begin
-        rx_in_en <= fifo_wren; // delay the rx_in_en signal to align with the loading of buf_outof_rx
-        if (fifo_wren) begin //(rxtx_en || rx_load) 
-            buf_outof_rx <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
-        end  
-    end  
-    /*
-    always @( posedge S_AXIS_ACLK )
-    begin
-        tlast_latch <= S_AXIS_TLAST; 
-    end
-    
-    assign tlast_edge = S_AXIS_TLAST & ~tlast_latch;
+	//generate 
+	//  for(byte_index=0; byte_index<= (C_S_AXIS_TDATA_WIDTH/8-1); byte_index=byte_index+1)
+	//  begin:FIFO_GEN
 
-    
-    
-    reg hsync;
-    
-    always @( posedge S_AXIS_ACLK )
-    begin
-        if (!S_AXIS_ARESETN) begin
-            curr_pix_col <= 0;
-            curr_pix_row <= 0;
-        end
-        if (rx_en) begin
-            hsync = 1;
-        end
-        if (rx_en & (curr_pix_col < FRAME_WIDTH)) begin
-            curr_pix_col <= curr_pix_col + 1;
-            curr_pix_row <= curr_pix_row;
-        end
-        else if (rx_en) begin
-            curr_pix_col <= 0;
-            curr_pix_row <= curr_pix_row + 1; 
-        end  
-    end  
-    */
-	// User logic ends
+	    reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : FRAME_WIDTH-1];
+
+	    // Streaming input data is stored in FIFO
+
+	    always @( posedge S_AXIS_ACLK )
+	    begin
+	      if (fifo_wren)// && S_AXIS_TSTRB[byte_index])
+	        begin
+	          stream_data_fifo[write_pointer % FRAME_WIDTH] <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
+	        end  
+	    end  
+	 // end		
+	//endgenerate
+
+	// Add user logic here
+	    always @( posedge S_AXIS_ACLK )                  
+	    begin                                            
+	      if(!S_AXIS_ARESETN)                            
+	        begin                                        
+	          stream_data_to_tx <= 1;                      
+	        end                                          
+	      else if (tx_enable)// && M_AXIS_TSTRB[byte_index]  
+	        begin                                        
+	          stream_data_to_tx <= stream_data_fifo[(read_pointer % FRAME_WIDTH) + 32'b1];   
+	        end                                          
+	    end   	// User logic ends
 
 	endmodule

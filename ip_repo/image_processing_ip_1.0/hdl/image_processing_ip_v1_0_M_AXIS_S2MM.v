@@ -12,16 +12,14 @@
 		// Width of S_AXIS address bus. The slave accepts the read and write addresses of width C_M_AXIS_TDATA_WIDTH.
 		parameter integer C_M_AXIS_TDATA_WIDTH	= 24,
 		// Start count is the numeber of clock cycles the master will wait before initiating/issuing any transaction.
-		parameter integer C_M_START_COUNT	= 3*1280
+		parameter integer C_M_START_COUNT	= 32
 	)
 	(
 		// Users to add ports here
-        input wire  [C_M_AXIS_TDATA_WIDTH-1 : 0] buf_into_tx,
-        //output wire tx_en,
-        //input wire  rx_en,
-        //input wire rx_mst_exec_state,
-        input wire rx_in_en,
-        //output wire dma_txready,
+        input wire [bit_num-1:0] write_pointer,
+        output reg [bit_num-1:0] read_pointer,     
+        output wire tx_enable,
+	    input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -40,6 +38,7 @@
 		// TREADY indicates that the slave can accept a transfer in the current cycle.
 		input wire  M_AXIS_TREADY
 	);
+	//Total number of output data.
 	// Total number of output data                                                 
 	localparam NUMBER_OF_OUTPUT_WORDS = FRAME_WIDTH*FRAME_HEIGHT;                                               
 	                                                                                     
@@ -71,7 +70,7 @@
 	// State variable                                                                    
 	reg [1:0] mst_exec_state;                                                            
 	// Example design FIFO read pointer                                                  
-	reg [bit_num-1:0] read_pointer;                                                      
+	//reg [bit_num-1:0] read_pointer;                                                      
 
 	// AXI Stream internal signals
 	//wait counter. The master waits for the user defined number of clock cycles before initiating a transfer.
@@ -86,7 +85,7 @@
 	reg  	axis_tlast_delay;
 	//FIFO implementation signals
 	reg [C_M_AXIS_TDATA_WIDTH-1 : 0] 	stream_data_out;
-	 wire  	tx_en;
+	wire  	tx_en;
 	//The master has issued all the streaming data stored in FIFO
 	reg  	tx_done;
 
@@ -114,10 +113,9 @@
 	        // The slave starts accepting tdata when                          
 	        // there tvalid is asserted to mark the                           
 	        // presence of valid streaming data                               
-	        //if ( count == 0 )   //if ( rx_en )                                             
+	        //if ( count == 0 )                                                 
 	        //  begin                                                           
-	            mst_exec_state  <= INIT_COUNTER; 
-	            //count    <= 0;                              
+	            mst_exec_state  <= INIT_COUNTER;                              
 	        //  end                                                             
 	        //else                                                              
 	        //  begin                                                           
@@ -131,12 +129,7 @@
 	        if ( count == C_M_START_COUNT - 1 )                               
 	          begin                                                           
 	            mst_exec_state  <= SEND_STREAM;                               
-	          end   
-	        //else if (rx_en)                                                             
-                //begin                                                           
-                //  count <= count + 1;                                           
-                //  mst_exec_state  <= INIT_COUNTER;                              
-                //end   	                                                                    
+	          end                                                             
 	        else                                                              
 	          begin                                                           
 	            count <= count + 1;                                           
@@ -162,23 +155,14 @@
 	//tvalid generation
 	//axis_tvalid is asserted when the control state machine's state is SEND_STREAM and
 	//number of output streaming data is less than the NUMBER_OF_OUTPUT_WORDS.
-	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < NUMBER_OF_OUTPUT_WORDS));
+	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < NUMBER_OF_OUTPUT_WORDS) && (read_pointer < write_pointer));
 	                                                                                               
 	// AXI tlast generation                                                                        
 	// axis_tlast is asserted number of output streaming data is NUMBER_OF_OUTPUT_WORDS-1          
 	// (0 to NUMBER_OF_OUTPUT_WORDS-1)                                                             
-	assign axis_tlast = (read_pointer == NUMBER_OF_OUTPUT_WORDS-1);                              
-
-	//FIFO read enable generation 
-	assign tx_en = M_AXIS_TREADY && axis_tvalid;  
-	
-	//assign dma_txready = M_AXIS_TREADY;
-
-    //wire tx_mst_exec_state = mst_exec_state; //
-    //wire rxtx_en = rx_en && tx_en; // 
-    //wire rx_load = rx_en && (tx_mst_exec_state == INIT_COUNTER); //
-    //wire tx_flush = tx_en && (rx_mst_exec_state == 1'b0); // rx_mst_exec_state == IDLE
-
+	assign axis_tlast = (read_pointer == NUMBER_OF_OUTPUT_WORDS-1);                                
+	                                                                                               
+	                                                                                               
 	// Delay the axis_tvalid and axis_tlast signal by one clock cycle                              
 	// to match the latency of M_AXIS_TDATA                                                        
 	always @(posedge M_AXIS_ACLK)                                                                  
@@ -200,68 +184,48 @@
 
 	always@(posedge M_AXIS_ACLK)                                               
 	begin                                                                            
-        if(!M_AXIS_ARESETN)                                                            
-        begin                                                                        
-            read_pointer <= 0;                                                         
-            tx_done <= 1'b0;                                                           
-        end                                                                          
-        else 
-	    //begin                                                                           
-            if (read_pointer < NUMBER_OF_OUTPUT_WORDS)                                
-            begin                                                                      
-                if (tx_en) //if (rxtx_en || tx_flush)                                                               
-                // read pointer is incremented after every read from the FIFO          
-                // when FIFO read signal is enabled.                                   
-                begin                                                                  
-                    read_pointer <= read_pointer + 1;                                    
-                    tx_done <= 1'b0;                                                     
-                end
-                //else                                                               
-                //begin                                                                  
-                //    read_counter <= read_counter;                                    
-                //    tx_done <= 1'b0;                                                     
-                end
-            //end                                                                        
-            else if (read_pointer == NUMBER_OF_OUTPUT_WORDS)                             
-              begin                                                                      
-                // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
-                // has been out.                                                         
-                tx_done <= 1'b1;    
-                //read_counter <= 0;                                         
-              end      
-	    end                                                                  
-    //end                                                                              
-	                                                     
-    // Streaming output data is read from FIFO       
-    always @( posedge M_AXIS_ACLK )                  
-    begin                                            
-      if(!M_AXIS_ARESETN)                            
-        begin                                        
-          stream_data_out <= 32'b1;                      
-        end                                          
-      else if (tx_en) //if (rxtx_en || tx_flush)
-        begin                                        
-          stream_data_out <= buf_into_tx; //buf_out[read_pointer + 32'b1];   
-        end                                          
-    end                                              
+	  if(!M_AXIS_ARESETN)                                                            
+	    begin                                                                        
+	      read_pointer <= 0;                                                         
+	      tx_done <= 1'b0;                                                           
+	    end                                                                          
+	  else                                                                           
+	    if (read_pointer <= NUMBER_OF_OUTPUT_WORDS-1)                                
+	      begin                                                                      
+	        if (tx_en)                                                               
+	          // read pointer is incremented after every read from the FIFO          
+	          // when FIFO read signal is enabled.                                   
+	          begin                                                                  
+	            read_pointer <= read_pointer + 1;                                    
+	            tx_done <= 1'b0;                                                     
+	          end                                                                    
+	      end                                                                        
+	    else if (read_pointer == NUMBER_OF_OUTPUT_WORDS)                             
+	      begin                                                                      
+	        // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
+	        // has been out.                                                         
+	        tx_done <= 1'b1;                                                         
+	      end                                                                        
+	end                                                                              
+
+
+	//FIFO read enable generation 
+
+	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
+	    always @( posedge M_AXIS_ACLK )                  
+	    begin                                            
+	      if(!M_AXIS_ARESETN)                            
+	        begin                                        
+	          stream_data_out <= 1;                      
+	        end                                          
+	      else if (tx_en)// && M_AXIS_TSTRB[byte_index]  
+	        begin                                        
+	          stream_data_out <= stream_data_to_tx; //stream_data_fifo[(read_pointer % FRAME_WIDTH) + 32'b1];   
+	        end                                          
+	    end                                              
 
 	// Add user logic here
-
-
-
-/*	
-    //reg  [C_M_AXIS_TDATA_WIDTH-1 : 0] buf_out [0 : NUMBER_OF_OUTPUT_WORDS-1];
-
-    integer i;
-    always @(posedge M_AXIS_ACLK) begin
-        if (rx_in_en) begin //if(rxtx_en) begin
-            buf_out[0] <= buf_into_tx;
-            for(i = 1; i < NUMBER_OF_OUTPUT_WORDS; i = i + 1) begin
-                buf_out[i] <= buf_out[i - 1];
-            end   
-        end
-    end
-*/
+	assign tx_enable = tx_en;                                                     
 	// User logic ends
 
 	endmodule

@@ -7,7 +7,6 @@
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
 		parameter integer AXIS_TDATA_WIDTH	= 24,
-        parameter integer WORDS_PER_LINE = 1280,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -72,36 +71,29 @@
 		input wire  m_axis_s2mm_tready
 	);
 	
-    wire [C_S_AXIS_MM2S_TDATA_WIDTH-1 : 0] wire_rx2lite;
-    wire [C_M_AXIS_S2MM_TDATA_WIDTH-1 : 0] wire_lite2tx;
-        wire rx_in_en;
-    wire [31:0] curr_pix_row;
-    wire [31:0] curr_pix_col;
-    wire rx_en;
-    wire tx_en;
-    wire tx_mst_exec_state;
-    wire rx_mst_exec_state;
+	function integer clogb2 (input integer bit_depth);
+      begin
+        for(clogb2=0; bit_depth>0; clogb2=clogb2+1)
+          bit_depth = bit_depth >> 1;
+      end
+    endfunction
 
-    wire rxtx_en = rx_en && tx_en; // 
-    wire rx_load = rx_en && (tx_mst_exec_state == 2'b01); // tx_mst_exec_state == INIT_COUNTER
-    wire tx_flush = tx_en && (rx_mst_exec_state == 1'b0); // rx_mst_exec_state == IDLE
+    // Total number of input data.
+    localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH*FRAME_HEIGHT;
+    // bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
+    localparam bit_number  = clogb2(NUMBER_OF_INPUT_WORDS-1);	
+       
+    wire  [bit_number-1:0] write_pointer;
+    wire  [bit_number-1:0] read_pointer;
+    wire  tx_enable;
+    wire  [C_S_AXIS_MM2S_TDATA_WIDTH-1:0] stream_data_to_tx;
     
+    	
 // Instantiation of Axi Bus Interface S_AXI_LITE
 	image_processing_ip_v1_0_S_AXI_LITE # ( 
 		.C_S_AXI_DATA_WIDTH(C_S_AXI_LITE_DATA_WIDTH),
-		.C_S_AXI_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH),
-		.FRAME_WIDTH(FRAME_WIDTH),
-        .FRAME_HEIGHT(FRAME_HEIGHT),
-        .AXIS_TDATA_WIDTH(AXIS_TDATA_WIDTH)
+		.C_S_AXI_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH)
 	) image_processing_ip_v1_0_S_AXI_LITE_inst (
-        .buf_from_rx(wire_rx2lite),
-        .buf_to_tx(wire_lite2tx),
-        .rx_in_en(rx_in_en),
-	//.rxtx_en(rxtx_en),
-        //.rx_load(rx_load),
-        //.tx_flush(tx_flush),
-	//    .curr_pix_row(curr_pix_row),
-        //.curr_pix_col(curr_pix_col),
 		.S_AXI_ACLK(s_axi_lite_aclk),
 		.S_AXI_ARESETN(s_axi_lite_aresetn),
 		.S_AXI_AWADDR(s_axi_lite_awaddr),
@@ -125,20 +117,16 @@
 		.S_AXI_RREADY(s_axi_lite_rready)
 	);
 
-        
 // Instantiation of Axi Bus Interface S_AXIS_MM2S
 	image_processing_ip_v1_0_S_AXIS_MM2S # ( 
 		.C_S_AXIS_TDATA_WIDTH(C_S_AXIS_MM2S_TDATA_WIDTH),
-        .FRAME_WIDTH(FRAME_WIDTH),
+		.FRAME_WIDTH(FRAME_WIDTH),
         .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXIS_MM2S_inst (
-	    .buf_outof_rx(wire_rx2lite),
-        	    .rx_in_en(rx_in_en),
-	//.rx_en(rx_en),
-        //.tx_en(tx_en),
-        //.tx_mst_exec_state(tx_mst_exec_state),
-	//    .curr_pix_row(curr_pix_row),
-	//    .curr_pix_col(curr_pix_col),
+        .write_pointer(write_pointer),
+        .read_pointer(read_pointer),
+        .tx_enable(tx_enable),
+        .stream_data_to_tx(stream_data_to_tx),
 		.S_AXIS_ACLK(s_axis_mm2s_aclk),
 		.S_AXIS_ARESETN(s_axis_mm2s_aresetn),
 		.S_AXIS_TREADY(s_axis_mm2s_tready),
@@ -153,13 +141,12 @@
 		.C_M_AXIS_TDATA_WIDTH(C_M_AXIS_S2MM_TDATA_WIDTH),
 		.C_M_START_COUNT(C_M_AXIS_S2MM_START_COUNT),
 		.FRAME_WIDTH(FRAME_WIDTH),
-		.FRAME_HEIGHT(FRAME_HEIGHT)
+        .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_M_AXIS_S2MM_inst (
-        .buf_into_tx(wire_lite2tx),
-        .rx_in_en(rx_in_en),        
-	//.rx_en(rx_en),
-        //.tx_en(tx_en),
-        //.rx_mst_exec_state(rx_mst_exec_state),
+        .write_pointer(write_pointer),
+        .read_pointer(read_pointer),
+        .tx_enable(tx_enable),
+        .stream_data_to_tx(stream_data_to_tx),
 		.M_AXIS_ACLK(m_axis_s2mm_aclk),
 		.M_AXIS_ARESETN(m_axis_s2mm_aresetn),
 		.M_AXIS_TVALID(m_axis_s2mm_tvalid),
@@ -170,6 +157,7 @@
 	);
 
 	// Add user logic here
+
 	// User logic ends
 
 	endmodule
