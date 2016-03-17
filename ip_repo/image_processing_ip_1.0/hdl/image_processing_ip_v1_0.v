@@ -123,7 +123,7 @@
 		.FRAME_WIDTH(FRAME_WIDTH),
         .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXIS_MM2S_inst (
-        .write_pointer(write_pointer),
+        //.write_pointer(write_pointer),
         .read_pointer(read_pointer),
         .tx_enable(tx_enable),
         .stream_data_to_tx(stream_data_to_tx),
@@ -143,7 +143,7 @@
 		.FRAME_WIDTH(FRAME_WIDTH),
         .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_M_AXIS_S2MM_inst (
-        .write_pointer(write_pointer),
+        //.write_pointer(write_pointer),
         .read_pointer(read_pointer),
         .tx_enable(tx_enable),
         .stream_data_to_tx(stream_data_to_tx),

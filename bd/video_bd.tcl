@@ -10,16 +10,16 @@
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-# set scripts_vivado_version 2015.1
-# set current_vivado_version [version -short]
+#set scripts_vivado_version 2015.1
+#set current_vivado_version [version -short]
 #
-# if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
-#    puts ""
-#    puts "ERROR: This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."
+#if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
+#   puts ""
+#   puts "ERROR: This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."
 #
-#    return 1
-# }
-# 
+#   return 1
+#}
+#
 ################################################################
 # START
 ################################################################
@@ -441,7 +441,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: axi_vdma_1, and set properties
   set axi_vdma_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_vdma:6.2 axi_vdma_1 ]
-  set_property -dict [ list CONFIG.c_m_axi_mm2s_data_width {128} CONFIG.c_m_axi_s2mm_data_width {128} CONFIG.c_m_axis_mm2s_tdata_width {24} CONFIG.c_mm2s_genlock_mode {0} CONFIG.c_mm2s_linebuffer_depth {4096} CONFIG.c_mm2s_max_burst_length {32} CONFIG.c_s2mm_genlock_mode {0} CONFIG.c_s2mm_linebuffer_depth {4096} CONFIG.c_s2mm_max_burst_length {32}  ] $axi_vdma_1
+  set_property -dict [ list CONFIG.c_m_axi_mm2s_data_width {128} CONFIG.c_m_axi_s2mm_data_width {128} CONFIG.c_m_axis_mm2s_tdata_width {24} CONFIG.c_mm2s_genlock_mode {0} CONFIG.c_mm2s_linebuffer_depth {4096} CONFIG.c_mm2s_max_burst_length {256} CONFIG.c_s2mm_genlock_mode {0} CONFIG.c_s2mm_linebuffer_depth {4096} CONFIG.c_s2mm_max_burst_length {256}  ] $axi_vdma_1
 
   # Create instance: d_axi_i2s_audio_0, and set properties
   set d_axi_i2s_audio_0 [ create_bd_cell -type ip -vlnv digilentinc.com:user:d_axi_i2s_audio:2.0 d_axi_i2s_audio_0 ]
@@ -688,4 +688,6 @@ CONFIG.G_USE_EXCEPTIONS {1}  ] $microblaze_0
 
 create_root_design ""
 
+
+puts "\n\nWARNING: This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

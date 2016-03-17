@@ -16,7 +16,7 @@
 	)
 	(
 		// Users to add ports here
-        input wire [bit_num-1:0] write_pointer,
+        //input wire [bit_num-1:0] write_pointer,
         output reg [bit_num-1:0] read_pointer,     
         output wire tx_enable,
 	    input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
@@ -155,7 +155,7 @@
 	//tvalid generation
 	//axis_tvalid is asserted when the control state machine's state is SEND_STREAM and
 	//number of output streaming data is less than the NUMBER_OF_OUTPUT_WORDS.
-	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < NUMBER_OF_OUTPUT_WORDS) && (read_pointer < write_pointer));
+	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < NUMBER_OF_OUTPUT_WORDS));// && (read_pointer < write_pointer));
 	                                                                                               
 	// AXI tlast generation                                                                        
 	// axis_tlast is asserted number of output streaming data is NUMBER_OF_OUTPUT_WORDS-1          
@@ -220,7 +220,7 @@
 	        end                                          
 	      else if (tx_en)// && M_AXIS_TSTRB[byte_index]  
 	        begin                                        
-	          stream_data_out <= stream_data_to_tx; //stream_data_fifo[(read_pointer % FRAME_WIDTH) + 32'b1];   
+	          stream_data_out <= stream_data_to_tx; //stream_data_fifo[(read_pointer % fifo_size) + 32'b1];   
 	        end                                          
 	    end                                              
 

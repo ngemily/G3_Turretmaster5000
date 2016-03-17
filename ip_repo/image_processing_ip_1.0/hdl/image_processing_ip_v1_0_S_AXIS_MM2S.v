@@ -14,7 +14,7 @@
 	)
 	(
 		// Users to add ports here
-        output reg [bit_num-1:0] write_pointer,
+        //output reg [bit_num-1:0] write_pointer,
         input wire [bit_num-1:0] read_pointer,
         input wire tx_enable,
 	    output reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
@@ -49,6 +49,8 @@
 	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH*FRAME_HEIGHT;
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);
+	
+	localparam fifo_size = 1024;
 	// Define the states of state machine
 	// The control state machine oversees the writing of input streaming data to the FIFO,
 	// and outputs the streaming data from the FIFO
@@ -66,7 +68,7 @@
 	// FIFO full flag
 	reg fifo_full_flag;
 	// FIFO write pointer
-	//reg [bit_num-1:0] write_pointer;
+	reg [bit_num-1:0] write_pointer;
 	// sink has accepted all the streaming data and stored in FIFO
 	  reg writes_done;
 	// I/O Connections assignments
@@ -114,7 +116,7 @@
 	// 
 	// The example design sink is always ready to accept the S_AXIS_TDATA  until
 	// the FIFO is not filled with NUMBER_OF_INPUT_WORDS number of input words.
-	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer <= NUMBER_OF_INPUT_WORDS-1) && (write_pointer < read_pointer + FRAME_WIDTH));
+	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer <= NUMBER_OF_INPUT_WORDS-1));// && (write_pointer < read_pointer + fifo_size));
 
 	always@(posedge S_AXIS_ACLK)
 	begin
@@ -150,7 +152,7 @@
 	//  for(byte_index=0; byte_index<= (C_S_AXIS_TDATA_WIDTH/8-1); byte_index=byte_index+1)
 	//  begin:FIFO_GEN
 
-	    reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : FRAME_WIDTH-1];
+	    reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : fifo_size-1];
 
 	    // Streaming input data is stored in FIFO
 
@@ -158,7 +160,7 @@
 	    begin
 	      if (fifo_wren)// && S_AXIS_TSTRB[byte_index])
 	        begin
-	          stream_data_fifo[write_pointer % FRAME_WIDTH] <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
+	          stream_data_fifo[write_pointer % fifo_size] <= S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
 	        end  
 	    end  
 	 // end		
@@ -173,7 +175,7 @@
 	        end                                          
 	      else if (tx_enable)// && M_AXIS_TSTRB[byte_index]  
 	        begin                                        
-	          stream_data_to_tx <= stream_data_fifo[(read_pointer % FRAME_WIDTH) + 32'b1];   
+	          stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size) + 32'b1];   
 	        end                                          
 	    end   	// User logic ends
 
