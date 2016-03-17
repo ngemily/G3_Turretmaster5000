@@ -17,7 +17,8 @@
 	(
 		// Users to add ports here
         //input wire [bit_num-1:0] write_pointer,
-        output reg [bit_num-1:0] read_pointer,     
+        output reg [bit_num-1:0] read_pointer,
+        output reg [1:0] mst_exec_state,                                                    
         output wire tx_enable,
 	    input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
 		// User ports ends
@@ -68,7 +69,7 @@
 	                SEND_STREAM   = 2'b10; // In this state the                          
 	                                     // stream data is output through M_AXIS_TDATA   
 	// State variable                                                                    
-	reg [1:0] mst_exec_state;                                                            
+	// reg [1:0] mst_exec_state;                                                            
 	// Example design FIFO read pointer                                                  
 	//reg [bit_num-1:0] read_pointer;                                                      
 

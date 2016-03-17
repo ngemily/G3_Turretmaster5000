@@ -16,6 +16,8 @@
 		// Users to add ports here
         //output reg [bit_num-1:0] write_pointer,
         input wire [bit_num-1:0] read_pointer,
+        output reg [bit_num-1:0] write_pointer,
+        output reg mst_exec_state,                                                    
         input wire tx_enable,
 	    output reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
 		// User ports ends
@@ -60,7 +62,7 @@
 	                                    // input stream data S_AXIS_TDATA 
 	wire  	axis_tready;
 	// State variable
-	reg mst_exec_state;  
+	//reg mst_exec_state;  
 	// FIFO implementation signals
 	genvar byte_index;     
 	// FIFO write enable
@@ -68,9 +70,9 @@
 	// FIFO full flag
 	reg fifo_full_flag;
 	// FIFO write pointer
-	reg [bit_num-1:0] write_pointer;
+	//reg [bit_num-1:0] write_pointer;
 	// sink has accepted all the streaming data and stored in FIFO
-	  reg writes_done;
+	reg writes_done;
 	// I/O Connections assignments
 
 	assign S_AXIS_TREADY	= axis_tready;

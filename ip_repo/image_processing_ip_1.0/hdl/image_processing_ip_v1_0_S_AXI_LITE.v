@@ -4,7 +4,8 @@
 	module image_processing_ip_v1_0_S_AXI_LITE #
 	(
 		// Users to add parameters here
-
+        parameter integer FRAME_WIDTH = 1280,
+        parameter integer FRAME_HEIGHT = 720,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -15,7 +16,14 @@
 	)
 	(
 		// Users to add ports here
-
+        input wire rx_mst_exec_state,        
+        input wire [1:0] tx_mst_exec_state,     
+        input wire [bit_num-1:0] read_pointer,
+        input wire [bit_num-1:0] write_pointer,
+        input wire mm2s_tready,
+        input wire mm2s_tvalid,
+        input wire s2mm_tvalid,
+        input wire s2mm_tready,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -562,14 +570,14 @@
 	begin
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-	        5'h00   : reg_data_out <= slv_reg0;
-	        5'h01   : reg_data_out <= slv_reg1;
-	        5'h02   : reg_data_out <= slv_reg2;
-	        5'h03   : reg_data_out <= slv_reg3;
-	        5'h04   : reg_data_out <= slv_reg4;
-	        5'h05   : reg_data_out <= slv_reg5;
-	        5'h06   : reg_data_out <= slv_reg6;
-	        5'h07   : reg_data_out <= slv_reg7;
+	        5'h00   : reg_data_out <= rx_mst_exec_state;
+	        5'h01   : reg_data_out <= tx_mst_exec_state;
+	        5'h02   : reg_data_out <= read_pointer;
+	        5'h03   : reg_data_out <= write_pointer;
+	        5'h04   : reg_data_out <= mm2s_tready;
+	        5'h05   : reg_data_out <= mm2s_tvalid;
+	        5'h06   : reg_data_out <= s2mm_tvalid;
+	        5'h07   : reg_data_out <= s2mm_tready;
 	        5'h08   : reg_data_out <= slv_reg8;
 	        5'h09   : reg_data_out <= slv_reg9;
 	        5'h0A   : reg_data_out <= slv_reg10;
@@ -610,7 +618,21 @@
 	end    
 
 	// Add user logic here
+	
+	// function called clogb2 that returns an integer which has the 
+	// value of the ceiling of the log base 2.
+	function integer clogb2 (input integer bit_depth);
+	  begin
+	    for(clogb2=0; bit_depth>0; clogb2=clogb2+1)
+	      bit_depth = bit_depth >> 1;
+	  end
+	endfunction
 
+	// Total number of input data.
+	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH*FRAME_HEIGHT;
+	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
+	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);	
+	
 	// User logic ends
 
 	endmodule

@@ -86,14 +86,26 @@
     wire  [bit_number-1:0] write_pointer;
     wire  [bit_number-1:0] read_pointer;
     wire  tx_enable;
+    wire rx_mst_exec_state;
+    wire [1:0] tx_mst_exec_state;        
     wire  [C_S_AXIS_MM2S_TDATA_WIDTH-1:0] stream_data_to_tx;
     
     	
 // Instantiation of Axi Bus Interface S_AXI_LITE
 	image_processing_ip_v1_0_S_AXI_LITE # ( 
 		.C_S_AXI_DATA_WIDTH(C_S_AXI_LITE_DATA_WIDTH),
-		.C_S_AXI_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH)
+		.C_S_AXI_ADDR_WIDTH(C_S_AXI_LITE_ADDR_WIDTH),
+		.FRAME_WIDTH(FRAME_WIDTH),
+        .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXI_LITE_inst (
+        .rx_mst_exec_state(rx_mst_exec_state),
+        .tx_mst_exec_state(tx_mst_exec_state),
+        .write_pointer(write_pointer),
+        .read_pointer(read_pointer),
+        .mm2s_tready(s_axis_mm2s_tready),
+        .mm2s_tvalid(s_axis_mm2s_tvalid),
+        .s2mm_tvalid(m_axis_s2mm_tvalid),
+        .s2mm_tready(m_axis_s2mm_tready),
 		.S_AXI_ACLK(s_axi_lite_aclk),
 		.S_AXI_ARESETN(s_axi_lite_aresetn),
 		.S_AXI_AWADDR(s_axi_lite_awaddr),
@@ -123,7 +135,8 @@
 		.FRAME_WIDTH(FRAME_WIDTH),
         .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_S_AXIS_MM2S_inst (
-        //.write_pointer(write_pointer),
+        .write_pointer(write_pointer),
+        .mst_exec_state(rx_mst_exec_state),
         .read_pointer(read_pointer),
         .tx_enable(tx_enable),
         .stream_data_to_tx(stream_data_to_tx),
@@ -144,6 +157,7 @@
         .FRAME_HEIGHT(FRAME_HEIGHT)
 	) image_processing_ip_v1_0_M_AXIS_S2MM_inst (
         //.write_pointer(write_pointer),
+        .mst_exec_state(tx_mst_exec_state),
         .read_pointer(read_pointer),
         .tx_enable(tx_enable),
         .stream_data_to_tx(stream_data_to_tx),
