@@ -48,7 +48,7 @@
 	endfunction
 
 	// Total number of input data.
-	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH*FRAME_HEIGHT;
+	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH;
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);
 	
@@ -118,7 +118,7 @@
 	// 
 	// The example design sink is always ready to accept the S_AXIS_TDATA  until
 	// the FIFO is not filled with NUMBER_OF_INPUT_WORDS number of input words.
-	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer <= NUMBER_OF_INPUT_WORDS-1));// && (write_pointer < read_pointer + fifo_size));
+	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer < NUMBER_OF_INPUT_WORDS));// && (write_pointer < read_pointer + fifo_size));
 
 	always@(posedge S_AXIS_ACLK)
 	begin
@@ -139,7 +139,7 @@
 	                writes_done <= 1'b0;
                 end
             end
-	        else if ((write_pointer == NUMBER_OF_INPUT_WORDS-1)|| S_AXIS_TLAST)
+	        else if ((write_pointer >= NUMBER_OF_INPUT_WORDS)|| S_AXIS_TLAST)
             begin
 	            // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data 
 	            // has been written to the FIFO which is also marked by S_AXIS_TLAST(kept for optional usage).
@@ -180,8 +180,10 @@
 	        end                                          
 	      else if (tx_enable)// && M_AXIS_TSTRB[byte_index]  
 	        begin                                        
-	          stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size) + 32'b1];   
+	          stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size)];// + 32'b1];   
 	        end                                          
-	    end   	// User logic ends
+	    end   	
+    
+    // User logic ends
 
 	endmodule

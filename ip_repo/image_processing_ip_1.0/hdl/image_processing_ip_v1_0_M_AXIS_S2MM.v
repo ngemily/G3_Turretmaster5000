@@ -41,7 +41,7 @@
 	);
 	//Total number of output data.
 	// Total number of output data                                                 
-	localparam NUMBER_OF_OUTPUT_WORDS = FRAME_WIDTH*FRAME_HEIGHT;                                               
+	localparam NUMBER_OF_OUTPUT_WORDS = FRAME_WIDTH;                                               
 	                                                                                     
 	// function called clogb2 that returns an integer which has the                      
 	// value of the ceiling of the log base 2.                                           
@@ -94,7 +94,7 @@
 	// I/O Connections assignments
 
 	assign M_AXIS_TVALID	= axis_tvalid_delay;
-	assign M_AXIS_TDATA	= stream_data_out;
+	assign M_AXIS_TDATA	= stream_data_to_tx;//stream_data_out;
 	assign M_AXIS_TLAST	= axis_tlast_delay;
 	assign M_AXIS_TSTRB	= {(C_M_AXIS_TDATA_WIDTH/8){1'b1}};
 
@@ -202,7 +202,7 @@
 	                tx_done <= 1'b0;                                                     
 	            end                                                                    
 	        end                                                                        
-	        else if (read_pointer == NUMBER_OF_OUTPUT_WORDS)                             
+	        else if (read_pointer >= NUMBER_OF_OUTPUT_WORDS)                             
 	        begin                                                                      
 	            // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
 	            // has been out.                                                         

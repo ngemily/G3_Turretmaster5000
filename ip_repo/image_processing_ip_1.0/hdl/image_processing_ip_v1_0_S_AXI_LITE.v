@@ -629,7 +629,7 @@
 	endfunction
 
 	// Total number of input data.
-	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH*FRAME_HEIGHT;
+	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH;
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);	
 	
