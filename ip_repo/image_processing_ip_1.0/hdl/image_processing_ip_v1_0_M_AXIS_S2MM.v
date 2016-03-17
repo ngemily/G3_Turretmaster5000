@@ -85,7 +85,7 @@
 	//Last of the streaming data delayed by one clock cycle
 	reg  	axis_tlast_delay;
 	//FIFO implementation signals
-	reg [C_M_AXIS_TDATA_WIDTH-1 : 0] 	stream_data_out;
+	reg     [C_M_AXIS_TDATA_WIDTH-1 : 0] 	stream_data_out;
 	wire  	tx_en;
 	//The master has issued all the streaming data stored in FIFO
 	reg  	tx_done;
@@ -185,28 +185,31 @@
 
 	always@(posedge M_AXIS_ACLK)                                               
 	begin                                                                            
-	  if(!M_AXIS_ARESETN)                                                            
+        if(!M_AXIS_ARESETN)                                                            
 	    begin                                                                        
 	      read_pointer <= 0;                                                         
 	      tx_done <= 1'b0;                                                           
 	    end                                                                          
-	  else                                                                           
-	    if (read_pointer <= NUMBER_OF_OUTPUT_WORDS-1)                                
-	      begin                                                                      
-	        if (tx_en)                                                               
-	          // read pointer is incremented after every read from the FIFO          
-	          // when FIFO read signal is enabled.                                   
-	          begin                                                                  
-	            read_pointer <= read_pointer + 1;                                    
-	            tx_done <= 1'b0;                                                     
-	          end                                                                    
-	      end                                                                        
-	    else if (read_pointer == NUMBER_OF_OUTPUT_WORDS)                             
-	      begin                                                                      
-	        // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
-	        // has been out.                                                         
-	        tx_done <= 1'b1;                                                         
-	      end                                                                        
+        else   
+        begin                                                                        
+            if (read_pointer < NUMBER_OF_OUTPUT_WORDS)                                
+            begin                                                                      
+	            if (tx_en)                                                               
+	            // read pointer is incremented after every read from the FIFO          
+	            // when FIFO read signal is enabled.                                   
+	            begin                                                                  
+	                read_pointer <= read_pointer + 1;                                    
+	                tx_done <= 1'b0;                                                     
+	            end                                                                    
+	        end                                                                        
+	        else if (read_pointer == NUMBER_OF_OUTPUT_WORDS)                             
+	        begin                                                                      
+	            // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
+	            // has been out.                                                         
+	            tx_done <= 1'b1;  
+                read_pointer <= 0;                                                         
+	        end     
+        end                                                                   
 	end                                                                              
 
 
