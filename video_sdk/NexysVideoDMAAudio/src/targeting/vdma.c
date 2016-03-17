@@ -131,7 +131,7 @@ XStatus fnSetupTargetingDmaOutput(XAxiVdma *AxiVdma, const VideoMode *videoMode,
         xil_printf("Write channel config failed %d\r\n", Status);
         return XST_FAILURE;
     }
-    Status = XAxiVdma_DmaSetBufferAddr(AxiVdma, XAXIVDMA_WRITE, targetingOutputSetup.FrameStoreStartAddr);
+    Status = XAxiVdma_DmaSetBufferAddr(AxiVdma, XAXIVDMA_WRITE, &(targetingOutputSetup.FrameStoreStartAddr[frameIdx]));
     if (Status != XST_SUCCESS)
     {
         xil_printf("Write channel set buffer address failed %d\r\n", Status);
@@ -162,7 +162,7 @@ XStatus fnSetupTargetingDmaInput(XAxiVdma *AxiVdma, const VideoMode *videoMode, 
     int i;
     for (i = 0; i < IP_NUM_FRAMES; i++)
     {
-        targetingInputSetup.FrameStoreStartAddr[i] = (u32) (u32) baseFrameBufferAddress + (videoMode->height * stride * i);
+        targetingInputSetup.FrameStoreStartAddr[i] = (u32) baseFrameBufferAddress + (videoMode->height * stride * i);
     }
 
     Status = XAxiVdma_DmaConfig(AxiVdma, XAXIVDMA_READ, &(targetingInputSetup));
@@ -171,7 +171,7 @@ XStatus fnSetupTargetingDmaInput(XAxiVdma *AxiVdma, const VideoMode *videoMode, 
         xil_printf("Read channel config failed %d\r\n", Status);
         return XST_FAILURE;
     }
-    Status = XAxiVdma_DmaSetBufferAddr(AxiVdma, XAXIVDMA_READ, targetingInputSetup.FrameStoreStartAddr);
+    Status = XAxiVdma_DmaSetBufferAddr(AxiVdma, XAXIVDMA_READ, &(targetingInputSetup.FrameStoreStartAddr[frameIdx]));
     if (Status != XST_SUCCESS)
     {
         xil_printf("Read channel set buffer address failed %d\r\n", Status);
@@ -197,20 +197,6 @@ XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdx
     XAxiVdma_IntrEnable(AxiVdma,
         		XAXIVDMA_IXR_ERROR_MASK|XAXIVDMA_IXR_FRMCNT_MASK, XAXIVDMA_WRITE);
 
-    // Start the write channel (IP -> Mem)
-    Status = XAxiVdma_DmaStart(AxiVdma, XAXIVDMA_WRITE);
-    if (Status != XST_SUCCESS)
-    {
-        xil_printf("Start Write transfer failed %d\r\n", Status);
-        return XST_FAILURE;
-    }
-    Status = XAxiVdma_StartParking(AxiVdma, frameIdxOut, XAXIVDMA_WRITE);
-    if (Status != XST_SUCCESS)
-    {
-        xil_printf("Unable to park the Write channel %d\r\n", Status);
-        return XST_FAILURE;
-    }
-
     // Start the read channel (Mem -> IP)
     Status = XAxiVdma_DmaStart(AxiVdma, XAXIVDMA_READ);
     if (Status != XST_SUCCESS)
@@ -222,6 +208,20 @@ XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdx
     if (Status != XST_SUCCESS)
     {
         xil_printf("Unable to park the channel %d\r\n", Status);
+        return XST_FAILURE;
+    }
+
+    // Start the write channel (IP -> Mem)
+    Status = XAxiVdma_DmaStart(AxiVdma, XAXIVDMA_WRITE);
+    if (Status != XST_SUCCESS)
+    {
+        xil_printf("Start Write transfer failed %d\r\n", Status);
+        return XST_FAILURE;
+    }
+    Status = XAxiVdma_StartParking(AxiVdma, frameIdxOut, XAXIVDMA_WRITE);
+    if (Status != XST_SUCCESS)
+    {
+        xil_printf("Unable to park the Write channel %d\r\n", Status);
         return XST_FAILURE;
     }
 

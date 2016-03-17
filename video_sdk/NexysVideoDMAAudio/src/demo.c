@@ -242,14 +242,6 @@ static void passthroughHdmi(void) {
     video_set_output_frame(2);
 }
 
-static void runImageProcessing(void) {
-    video_set_input_frame(0);
-    MB_Sleep(100); // TESTING ONLY; CHAGE TO INTERRUPT
-    video_set_input_frame(2);
-    video_set_output_frame(1);
-    targeting_begin_transfer(&sAxiTargetingDma);
-}
-
 static void df0(void) {
     video_set_output_frame(0);
 }
@@ -267,6 +259,15 @@ static void vf1(void) {
 }
 static void vf2(void) {
     video_set_input_frame(2);
+}
+
+static void runImageProcessing(void) {
+	video_set_output_resolution(RES_720P);
+	vf0();
+	MB_Sleep(100);
+	vf2();
+	targeting_begin_transfer(&sAxiTargetingDma);
+	df1();
 }
 
 /*****************************************************************************/
