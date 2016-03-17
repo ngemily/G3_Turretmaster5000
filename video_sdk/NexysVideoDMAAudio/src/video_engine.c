@@ -178,7 +178,7 @@ XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res) {
     }
 
     XStatus status = DisplayStop(&dispCtrl);
-    status |= DisplaySetMode(&dispCtrl, &VMODE_640x480);
+    status |= DisplaySetMode(&dispCtrl, mode);
     status |= DisplayStart(&dispCtrl);
     return status;
 }

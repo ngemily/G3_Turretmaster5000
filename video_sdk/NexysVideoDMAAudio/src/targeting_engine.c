@@ -50,8 +50,8 @@ XStatus targeting_begin_transfer(XAxiVdma *dmaPtr) {
 
 void print_ip_info(void) {
     xil_printf("VDMA Info:\n\r");
-    xil_printf("XAxiVdma_GetStatus(IN)  = %08x\n\r", XAxiVdma_GetStatus(vdmaPtr, XAXIVDMA_READ));
-    xil_printf("XAxiVdma_GetStatus(OUT) = %08x\n\r", XAxiVdma_GetStatus(vdmaPtr, XAXIVDMA_WRITE));
+    XAxiVdma_DmaRegisterDump(vdmaPtr, XAXIVDMA_READ);
+    XAxiVdma_DmaRegisterDump(vdmaPtr, XAXIVDMA_WRITE);
     volatile TargetingIPStatus *ipStatus = (TargetingIPStatus *) 0x44A70000;
     xil_printf("rx_fsm_state = %08x\n\r", ipStatus->rx_fsm_state);
     xil_printf("tx_fsm_state = %08x\n\r", ipStatus->tx_fsm_state);

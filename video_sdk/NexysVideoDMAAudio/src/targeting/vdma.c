@@ -110,8 +110,9 @@ XStatus fnSetupTargetingDmaOutput(XAxiVdma *AxiVdma, const VideoMode *videoMode,
      * current mode
      */
     targetingOutputSetup.VertSizeInput       = videoMode->height;
-    targetingOutputSetup.HoriSizeInput       = stride;
+    targetingOutputSetup.HoriSizeInput       = videoMode->width * 3;
     targetingOutputSetup.FixedFrameStoreAddr = frameIdx;
+    xil_printf("Out Hor: %d; Ver: %d\n\r", targetingOutputSetup.HoriSizeInput, targetingOutputSetup.VertSizeInput);
 
     /*
      *Also reset the stride and address values, in case the user manually changed them
@@ -152,6 +153,8 @@ XStatus fnSetupTargetingDmaInput(XAxiVdma *AxiVdma, const VideoMode *videoMode, 
     targetingInputSetup.VertSizeInput       = videoMode->height;
     targetingInputSetup.HoriSizeInput       = videoMode->width * 3;
     targetingInputSetup.FixedFrameStoreAddr = frameIdx;
+    xil_printf("In  Hor: %d; Ver: %d\n\r", targetingInputSetup.HoriSizeInput, targetingInputSetup.VertSizeInput);
+
     /*
      *Also reset the stride and address values, in case the user manually changed them
      */
