@@ -140,8 +140,9 @@ static XUartLite 	sUartLite;
 static XGpio     	sGpio;
 static VideoCapture	sVideoCapt;
 
-static AudioClip sPortalSong = {};
-static bool sPortalSongLoaded = false;
+// static variables storing information about what sounds are available, and
+// where they are stored on the SD card.
+static AudioClip sSoundBoard[SOUND_ID_MAX] = {};
 
 volatile int numInterrupts;
 
@@ -218,21 +219,23 @@ void uart_rec_audio(void) {
 		return;
 	}
 
-	sPortalSong.baseAddr = (u32 *) AUDIO_BASE_ADDR;
-	sPortalSong.length = numBytesRead;
-	sPortalSong.loaded = true;
+	sSoundBoard[SOUND_ID_STILL_ALIVE].baseAddr = (u32 *) AUDIO_BASE_ADDR;
+	sSoundBoard[SOUND_ID_STILL_ALIVE].length = numBytesRead;
+	sSoundBoard[SOUND_ID_STILL_ALIVE].loaded = true;
 
-	xil_printf("Portal song is %d bytes long.\r\n", sPortalSong.length);
+	xil_printf("Portal song is %d bytes long.\r\n", sSoundBoard[SOUND_ID_STILL_ALIVE].length);
  }
 
 
  void playPortalSong(void) {
-	 if (sPortalSong.loaded) {
-		 play_audio(sPortalSong.baseAddr, sPortalSong.length >> 2);
+	 if (sSoundBoard[SOUND_ID_STILL_ALIVE].loaded) {
+		 play_audio(sSoundBoard[SOUND_ID_STILL_ALIVE].baseAddr,
+				    sSoundBoard[SOUND_ID_STILL_ALIVE].length >> 2);
 	 } else {
 		 xil_printf("Portal song not loaded yet!\r\n");
 	 }
  }
+
 
 static void passthroughHdmi(void) {
     if (XST_SUCCESS != video_set_output_resolution(RES_720P)) {
@@ -317,6 +320,11 @@ int main(void)
     if (status != XST_SUCCESS) {
         xil_printf("Failed to initialize system.\r\n");
         return XST_FAILURE;
+    }
+
+    // Make absolutely sure that the songs are marked as unloaded.
+    for (int i = 0; i < SOUND_ID_MAX; i++) {
+    	sSoundBoard[i].loaded = false;
     }
 
     fnEnableInterrupts(&sIntc, &ivt[0], sizeof(ivt)/sizeof(ivt[0]));
