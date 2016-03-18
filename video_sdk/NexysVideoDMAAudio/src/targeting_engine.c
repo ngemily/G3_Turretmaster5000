@@ -2,7 +2,7 @@
  * targeting_engine.c
  *
  *  Created on: Mar 13, 2016
- *      Author: Robert
+ *      Author: Roberto Bortolussi
  */
 
 #include <xstatus.h>

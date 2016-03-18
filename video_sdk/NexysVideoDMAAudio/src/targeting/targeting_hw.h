@@ -2,7 +2,7 @@
  * targeting_hw.h
  *
  *  Created on: Mar 17, 2016
- *      Author: Roberto
+ *      Author: Roberto Bortolussi
  */
 
 #ifndef TARGETING_HW_H_

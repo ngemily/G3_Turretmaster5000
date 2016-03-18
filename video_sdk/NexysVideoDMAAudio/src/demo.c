@@ -311,11 +311,7 @@ static void r720p(void) {
 }
 
 static void runImageProcessing(void) {
-	vf0();
-	MB_Sleep(100);
-	vf2();
 	targeting_begin_transfer(&sAxiTargetingDma);
-	df1();
 }
 
 static void loopIp(void) {

@@ -2,7 +2,7 @@
  * video_engine.c
  *
  *  Created on: Mar 11, 2016
- *      Author: Robert
+ *      Author: Roberto Bortolussi
  */
 
 /* ------------------------------------------------------------ */

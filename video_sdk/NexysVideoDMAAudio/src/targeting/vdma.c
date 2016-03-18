@@ -1,8 +1,8 @@
 /*
- * dma.c
+ * vdma.c
  *
- *  Created on: Jan 20, 2015
- *      Author: ROHegbeC
+ *  Created on: Mar 14, 2016
+ *      Author: Roberto Bortolussi
  */
 
 #include <xaxivdma.h>
