@@ -94,7 +94,7 @@
 	// I/O Connections assignments
 
 	assign M_AXIS_TVALID	= axis_tvalid_delay;
-	assign M_AXIS_TDATA	= stream_data_to_tx;//stream_data_out;
+	//assign M_AXIS_TDATA	= stream_data_out;
 	assign M_AXIS_TLAST	= axis_tlast_delay;
 	assign M_AXIS_TSTRB	= {(C_M_AXIS_TDATA_WIDTH/8){1'b1}};
 
@@ -229,7 +229,12 @@
 	    end                                              
 
 	// Add user logic here
-	assign tx_enable = tx_en;                                                     
+	assign tx_enable = tx_en;   
+	
+	assign M_AXIS_TDATA[7:0] = stream_data_to_tx[15:8];     // puts blue into green
+    assign M_AXIS_TDATA[15:8] = stream_data_to_tx[7:0];     // puts green into blue
+    assign M_AXIS_TDATA[23:16] = stream_data_to_tx[23:16];  // keeps red the same
+		                                                  
 	// User logic ends
 
 	endmodule

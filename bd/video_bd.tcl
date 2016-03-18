@@ -422,7 +422,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
-  set_property -dict [ list CONFIG.NUM_MI {1} CONFIG.NUM_SI {8} CONFIG.S02_HAS_DATA_FIFO {0} CONFIG.S03_HAS_DATA_FIFO {0}  ] $axi_interconnect_0
+  set_property -dict [ list CONFIG.M00_HAS_DATA_FIFO {2} CONFIG.NUM_MI {1} CONFIG.NUM_SI {8} CONFIG.S02_HAS_DATA_FIFO {0} CONFIG.S03_HAS_DATA_FIFO {0}  ] $axi_interconnect_0
 
   # Create instance: axi_quad_spi_0, and set properties
   set axi_quad_spi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_quad_spi:3.2 axi_quad_spi_0 ]
@@ -452,7 +452,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: dvi2rgb_0, and set properties
   set dvi2rgb_0 [ create_bd_cell -type ip -vlnv digilentinc.com:ip:dvi2rgb:1.5 dvi2rgb_0 ]
-  set_property -dict [ list CONFIG.kAddBUFG {false} CONFIG.kRstActiveHigh {false}  ] $dvi2rgb_0
+  set_property -dict [ list CONFIG.kAddBUFG {false} CONFIG.kEdidFileName {720p_edid.txt} CONFIG.kRstActiveHigh {false}  ] $dvi2rgb_0
 
   # Create instance: image_processing_ip_0, and set properties
   set image_processing_ip_0 [ create_bd_cell -type ip -vlnv xilinx.com:user:image_processing_ip:1.0 image_processing_ip_0 ]
