@@ -28,3 +28,10 @@ How to generate files that play correctly on the board:
 
 When read off of the Sd card into memory and played, it shouldn't sound like 
 terrible static.
+
+Update the video processing ip core:
+    
+    git submodule init
+    git submodule update 
+    cd ip_repo/image_processing_ip_1.0/hdl/core
+    git pull origin master

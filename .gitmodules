@@ -1,3 +1,6 @@
 [submodule "ip_repo/detectinator_1.0"]
 	path = ip_repo/detectinator_1.0
 	url = git@git.bortolus.si:ece532/detectinator-ip.git
+[submodule "ip_repo/image_processing_ip_1.0/hdl/core"]
+	path = ip_repo/image_processing_ip_1.0/hdl/core
+	url = git@github.com:ngemily/detectinator.git
