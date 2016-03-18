@@ -450,8 +450,6 @@ void VtcIsr(void *InstancePtr, u32 pendingIrpt)
 {
 	VideoCapture *videoPtr = (VideoCapture *)InstancePtr;
 
-	//xil_printf("VIDEO ISR\n\r");
-
 	xil_printf( "$");
 	if ((XVtc_GetDetectionStatus(&videoPtr->vtc) & XVTC_STAT_LOCKED_MASK))
 	{

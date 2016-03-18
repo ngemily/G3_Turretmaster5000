@@ -261,13 +261,24 @@ static void vf2(void) {
     video_set_input_frame(2);
 }
 
-static void runImageProcessing(void) {
+static void r720p(void) {
 	video_set_output_resolution(RES_720P);
+}
+
+static void runImageProcessing(void) {
 	vf0();
 	MB_Sleep(100);
 	vf2();
 	targeting_begin_transfer(&sAxiTargetingDma);
 	df1();
+}
+
+static void loopIp(void) {
+	int i;
+	for (i=0; i<30; i++) {
+		runImageProcessing();
+		MB_Sleep(1000);
+	}
 }
 
 /*****************************************************************************/
@@ -338,6 +349,8 @@ int main(void)
 	register_uart_response("vf2",         vf2);
 	register_uart_response("vf0",         vf0);
 	register_uart_response("ipinfo",      print_ip_info);
+	register_uart_response("720p",        r720p);
+	register_uart_response("loop",        loopIp);
 
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 

@@ -225,7 +225,5 @@ XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdx
         return XST_FAILURE;
     }
 
-    xil_printf("VDMA run success??\n\r");
-
     return XST_SUCCESS;
 }
