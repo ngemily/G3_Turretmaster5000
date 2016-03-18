@@ -104,6 +104,13 @@
 #define INTC_DEVICE_ID		XPAR_INTC_0_DEVICE_ID
 #define SD_GPIO_CHANNEL	    2
 
+#define BUTTON_CENTER (0x1)
+#define BUTTON_UP (0x2)
+#define BUTTON_LEFT (0x4)
+#define BUTTON_RIGHT (0x8)
+#define BUTTON_DOWN (0x10)
+
+
 
 /**************************** Type Definitions *******************************/
 
@@ -128,6 +135,11 @@ static void stopTest();
 
 void ButtonIsr(void *InstancePtr);
 
+static void ManualMainLoop(void);
+static void AutoMainLoop(void);
+static void EnterManualMainLoop(void);
+static void EnterAutomaticMainLoop(void);
+
 /************************** Variable Definitions *****************************/
 /*
  * Device instance definitions
@@ -146,7 +158,9 @@ static VideoCapture	sVideoCapt;
 static AudioClip sSoundBoard[SOUND_ID_MAX] = {};
 static u32 *sSoundTip;
 
-volatile int numInterrupts;
+volatile static u32 sButtonState;
+volatile static bool sEnterManualLoop;
+volatile static bool sEnterAutomatedLoop;
 
 // Interrupt vector table
 const ivt_t ivt[] = {
@@ -200,6 +214,7 @@ void uart_rec_audio(void) {
 	 play_audio( (u32 *) AUDIO_BASE_ADDR, RECORD_LENGTH);
  }
 
+
  void loadSongIntoMemory(SoundIndex soundIndex, char *name) {
 		FATFS FatFs;
 		FIL FHandle;
@@ -229,6 +244,7 @@ void uart_rec_audio(void) {
 		// Update the tip of the sound memory region.
 		sSoundTip += (numBytesRead >> 2);
  }
+
 
  void loadSounds(void) {
 	 loadSongIntoMemory(SOUND_ID_MACHINE_GUN, GUN_PATH);
@@ -287,34 +303,48 @@ static void passthroughHdmi(void) {
     video_set_output_frame(2);
 }
 
+
 static void df0(void) {
     video_set_output_frame(0);
 }
+
+
 static void df1(void) {
     video_set_output_frame(1);
 }
+
+
 static void df2(void) {
     video_set_output_frame(2);
 }
+
+
 static void vf0(void) {
 	video_set_input_frame(0);
 }
+
+
 static void vf1(void) {
 	video_set_input_frame(1);
 }
+
+
 static void vf2(void) {
     video_set_input_frame(2);
 }
 
+
 static void r720p(void) {
 	video_set_output_resolution(RES_720P);
 }
+
 
 static void runImageProcessing(void) {
 	video_set_input_enabled(0);
 	video_set_output_enabled(0);
 	targeting_begin_transfer(&sAxiTargetingDma);
 }
+
 
 static void loopIp(void) {
 	int i;
@@ -362,12 +392,15 @@ int main(void)
         return XST_FAILURE;
     }
 
-    // Make absolutely sure that the songs are marked as unloaded.
+    // Initialize static variables.
     for (int i = 0; i < SOUND_ID_MAX; i++) {
     	sSoundBoard[i].loaded = false;
     }
     sSoundTip = (u32 *) AUDIO_BASE_ADDR;
 
+    sButtonState = 0;
+    sEnterManualLoop = false;
+    sEnterAutomatedLoop = false;
     fnEnableInterrupts(&sIntc, &ivt[0], sizeof(ivt)/sizeof(ivt[0]));
 
 	register_uart_response("test", test_fcn);
@@ -391,6 +424,9 @@ int main(void)
 	register_uart_response("portal_gun", playPortalGunSound);
 	register_uart_response("target", playTargetAcquired);
 
+	register_uart_response("manual", EnterManualMainLoop);
+	register_uart_response("auto", EnterAutomaticMainLoop);
+
 	register_uart_response("passthrough", passthroughHdmi);
 	register_uart_response("runip",       runImageProcessing);
 	register_uart_response("videoinfo",   print_video_info);
@@ -408,7 +444,13 @@ int main(void)
 
 	xil_printf(PROMPT_STRING);
 	while (do_run) {
-		MB_Sleep(1000);
+		if (sEnterManualLoop) {
+			ManualMainLoop();
+		} else if (sEnterAutomatedLoop){
+			AutoMainLoop();
+		} else {
+			MB_Sleep(1000);
+		}
 	}
 
 	xil_printf("\r\n--- Exiting main() --- \r\n");
@@ -579,18 +621,18 @@ static void MotorPatternTest() {
 
 void ButtonIsr(void *InstancePtr) {
 	XGpio *GpioPtr = (XGpio *) InstancePtr;
-	u32 buttons;
 
 	XGpio_InterruptClear(GpioPtr, XGPIO_IR_CH1_MASK);
-	xil_printf("in button ISR.\r\n");
+	//xil_printf("in button ISR.\r\n");
 
-	buttons = XGpio_DiscreteRead(GpioPtr, 1) & 0x1F;
+	sButtonState = XGpio_DiscreteRead(GpioPtr, 1) & 0x1F;
 
-	if (buttons & 0x1) {
-		playGunSound();
-	} else if (buttons & 0x2) {
-		playPortalGunSound();
+	if (continueTest && sEnterManualLoop) {
+		if (sButtonState & BUTTON_CENTER) {
+			playGunSound();
+		}
 	}
+
 
 }
 
@@ -598,11 +640,50 @@ static void stopTest() {
     continueTest = false;
 }
 
-static void main_loop(void) {
-	TargetingState state = get_targeting_state();
-	// TODO
+static void AutoMainLoop(void) {
+
+
+	continueTest = true;
+	xil_printf("Entering manual mode.\r\n");
+	while(continueTest) {
+		TargetingState state = get_targeting_state();
+		MB_Sleep(1000);
+	}
+	sEnterAutomatedLoop = false;
 }
 
+void ManualMainLoop(void) {
+	continueTest = true;
+	xil_printf("Entering manual mode.\r\n");
+	while(continueTest) {
 
+		if (sButtonState & BUTTON_LEFT) {
+			PanLeft(1);
+		}
+
+		if (sButtonState & BUTTON_RIGHT) {
+			PanRight(1);
+		}
+
+		if (sButtonState & BUTTON_UP) {
+			TiltUp(1);
+		}
+
+		if (sButtonState & BUTTON_DOWN) {
+			TiltDown(1);
+		}
+
+		MB_Sleep(100);
+	}
+	sEnterManualLoop = false;
+}
+
+void EnterManualMainLoop(void) {
+	sEnterManualLoop = true;
+}
+
+static void EnterAutomaticMainLoop(void) {
+	sEnterAutomatedLoop = true;
+}
 
 

@@ -105,6 +105,27 @@ void SetPanAngle(int angle) {
 	CurrentPanAngle = angle;
 }
 
+void PanLeft(int angle) {
+	int newAngle = CurrentPanAngle - angle;
+
+	if (newAngle < SERVO_ANGLE_MAX) {
+		newAngle = SERVO_ANGLE_MAX;
+	}
+
+	SetPanAngle(newAngle);
+}
+
+
+void PanRight(int angle) {
+	int newAngle = CurrentPanAngle + angle;
+
+	if (newAngle > SERVO_ANGLE_MAX) {
+		newAngle = SERVO_ANGLE_MAX;
+	}
+
+	SetPanAngle(newAngle);
+}
+
 void EnableTiltServo() {
 	u32 CtrlReg = DRIVER_BOARD_IP_mReadReg(DRIVER_BOARD_BASE_ADDR, CTRL_REG_OFFSET);
 	CtrlReg |= TILT_ENABLE_MASK;
@@ -133,6 +154,27 @@ void SetTiltAngle(int angle) {
 	duty = AngleToDuty(angle);
 	DRIVER_BOARD_IP_mWriteReg(DRIVER_BOARD_BASE_ADDR, TILT_REG_OFFSET, duty);
 	CurrentTiltAngle = angle;
+}
+
+void TiltUp(int angle){
+	int newAngle = CurrentTiltAngle + angle;
+
+	if (newAngle > SERVO_ANGLE_MAX) {
+		newAngle = SERVO_ANGLE_MAX;
+	}
+
+	SetTiltAngle(newAngle);
+}
+
+
+void TiltDown(int angle) {
+	int newAngle = CurrentTiltAngle - angle;
+
+	if (newAngle < SERVO_ANGLE_MAX) {
+		newAngle = SERVO_ANGLE_MAX;
+	}
+
+	SetTiltAngle(newAngle);
 }
 
 /******************************************************************************
