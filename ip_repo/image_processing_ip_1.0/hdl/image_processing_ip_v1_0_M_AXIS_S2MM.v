@@ -6,20 +6,26 @@
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
-		// User parameters ends
+        parameter integer FIFO_SIZE = 1024,
+        parameter integer fifo_bits = 10,
+        parameter integer line_bits = 11,
+        
+        // User parameters ends
 		// Do not modify the parameters beyond this line
 
 		// Width of S_AXIS address bus. The slave accepts the read and write addresses of width C_M_AXIS_TDATA_WIDTH.
 		parameter integer C_M_AXIS_TDATA_WIDTH	= 24,
 		// Start count is the numeber of clock cycles the master will wait before initiating/issuing any transaction.
-		parameter integer C_M_START_COUNT	= 32
+		parameter integer C_M_START_COUNT	= 64,
+        parameter integer WAIT_COUNT_BITS = 6
 	)
 	(
 		// Users to add ports here
-        input wire [bit_num-1:0] write_pointer,
-        output reg [bit_num-1:0] read_pointer,
+        input wire [line_bits-1:0] write_pointer,
+        output reg [line_bits-1:0] read_pointer,
         output wire tx_enable,
         input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+        input wire [fifo_bits-1:0] fifo_track,
         output reg [1:0] mst_exec_state,                                                    
 
 		// User ports ends
@@ -39,25 +45,7 @@
 		output wire  M_AXIS_TLAST,
 		// TREADY indicates that the slave can accept a transfer in the current cycle.
 		input wire  M_AXIS_TREADY
-	);
-	//Total number of output data.
-	// Total number of output data                                                 
-	localparam NUMBER_OF_OUTPUT_WORDS = FRAME_WIDTH;                                               
-	                                                                                     
-	// function called clogb2 that returns an integer which has the                      
-	// value of the ceiling of the log base 2.                                           
-	function integer clogb2 (input integer bit_depth);                                   
-	  begin                                                                              
-	    for(clogb2=0; bit_depth>0; clogb2=clogb2+1)                                      
-	      bit_depth = bit_depth >> 1;                                                    
-	  end                                                                                
-	endfunction                                                                          
-	                                                                                     
-	// WAIT_COUNT_BITS is the width of the wait counter.                                 
-	localparam integer WAIT_COUNT_BITS = clogb2(C_M_START_COUNT-1);                      
-	                                                                                     
-	// bit_num gives the minimum number of bits needed to address 'depth' size of FIFO.  
-	localparam bit_num  = clogb2(NUMBER_OF_OUTPUT_WORDS);                                
+	);                           
 	                                                                                     
 	// Define the states of state machine                                                
 	// The control state machine oversees the writing of input streaming data to the FIFO,
@@ -157,12 +145,12 @@
 	//tvalid generation
 	//axis_tvalid is asserted when the control state machine's state is SEND_STREAM and
 	//number of output streaming data is less than the NUMBER_OF_OUTPUT_WORDS.
-	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < NUMBER_OF_OUTPUT_WORDS));// && (read_pointer < write_pointer));
+	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < FRAME_WIDTH) && (fifo_track > 0));
 	                                                                                               
 	// AXI tlast generation                                                                        
 	// axis_tlast is asserted number of output streaming data is NUMBER_OF_OUTPUT_WORDS-1          
 	// (0 to NUMBER_OF_OUTPUT_WORDS-1)                                                             
-	assign axis_tlast = (read_pointer == NUMBER_OF_OUTPUT_WORDS-1);                                
+	assign axis_tlast = (read_pointer == FRAME_WIDTH-1);                                
 	                                                                                               
 	                                                                                               
 	// Delay the axis_tvalid and axis_tlast signal by one clock cycle                              
@@ -193,7 +181,7 @@
 	    end                                                                          
         else   
         begin                                                                        
-            if (read_pointer < NUMBER_OF_OUTPUT_WORDS)                                
+            if (read_pointer < FRAME_WIDTH)                                
             begin                                                                      
 	            if (tx_en)                                                               
 	            // read pointer is incremented after every read from the FIFO          
@@ -203,7 +191,7 @@
 	                tx_done <= 1'b0;                                                     
 	            end                                                                    
 	        end                                                                        
-	        else if (read_pointer >= NUMBER_OF_OUTPUT_WORDS)                             
+	        else if (read_pointer >= FRAME_WIDTH)                             
 	        begin                                                                      
 	            // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
 	            // has been out.                                                         

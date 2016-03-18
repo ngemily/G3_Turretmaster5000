@@ -6,6 +6,9 @@
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
+        parameter integer FIFO_SIZE = 1024,
+        parameter integer fifo_bits = 10,
+        parameter integer line_bits = 11,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -14,10 +17,11 @@
 	)
 	(
 		// Users to add ports here
-        output reg [bit_num-1:0] write_pointer,
-        input wire [bit_num-1:0] read_pointer,
+        output reg [line_bits-1:0] write_pointer,
+        input wire [line_bits-1:0] read_pointer,
         output wire rx_enable,
 	    output wire [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
+        input wire [fifo_bits-1:0] fifo_track,
         output reg mst_exec_state,                                                    
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -37,20 +41,7 @@
 		// Data is in valid
 		input wire  S_AXIS_TVALID
 	);
-	// function called clogb2 that returns an integer which has the 
-	// value of the ceiling of the log base 2.
-	function integer clogb2 (input integer bit_depth);
-	  begin
-	    for(clogb2=0; bit_depth>0; clogb2=clogb2+1)
-	      bit_depth = bit_depth >> 1;
-	  end
-	endfunction
 
-	// Total number of input data.
-	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH;
-	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
-	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);
-	
 	// Define the states of state machine
 	// The control state machine oversees the writing of input streaming data to the FIFO,
 	// and outputs the streaming data from the FIFO
@@ -116,7 +107,7 @@
 	// 
 	// The example design sink is always ready to accept the S_AXIS_TDATA  until
 	// the FIFO is not filled with NUMBER_OF_INPUT_WORDS number of input words.
-	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer < NUMBER_OF_INPUT_WORDS));// && (write_pointer < read_pointer + fifo_size));
+	assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (write_pointer < FRAME_WIDTH) && (fifo_track < FIFO_SIZE));
 
 	always@(posedge S_AXIS_ACLK)
 	begin
@@ -127,7 +118,7 @@
 	    end  
         else
         begin
-            if (write_pointer < NUMBER_OF_INPUT_WORDS)
+            if (write_pointer < FRAME_WIDTH)
             begin
                 if (fifo_wren)
 	            begin
@@ -137,7 +128,7 @@
 	                writes_done <= 1'b0;
                 end
             end
-	        else if ((write_pointer >= NUMBER_OF_INPUT_WORDS)|| S_AXIS_TLAST)
+	        else if ((write_pointer >= FRAME_WIDTH)|| S_AXIS_TLAST)
             begin
 	            // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data 
 	            // has been written to the FIFO which is also marked by S_AXIS_TLAST(kept for optional usage).
@@ -151,6 +142,27 @@
 	assign fifo_wren = S_AXIS_TVALID && axis_tready;
 	assign rx_enable = fifo_wren;
 	assign stream_data_from_rx[C_S_AXIS_TDATA_WIDTH-1:0] = S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
+
+/*	
+    always @( posedge S_AXIS_ACLK )
+	begin
+        if(!S_AXIS_ARESETN)
+        begin
+            hsync <= 1'b0;
+            write_line <= 0;
+        end  
+        else if((write_pointer == FRAME_WIDTH-1) && (rx_enable))
+        begin
+            hsync <= 1'b1;
+            write_line <= write_line + 1;
+        end  
+        else
+        begin
+            hsync <= 1'b0;
+            write_line <= write_line;
+        end  
+    end
+*/	
 /*
 	// FIFO Implementation
 	//generate 
