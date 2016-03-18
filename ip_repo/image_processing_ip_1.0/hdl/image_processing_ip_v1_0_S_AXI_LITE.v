@@ -588,7 +588,7 @@
 	        5'h05   : reg_data_out <= mm2s_tvalid;
 	        5'h06   : reg_data_out <= s2mm_tvalid;
 	        5'h07   : reg_data_out <= s2mm_tready;
-	        5'h08   : reg_data_out <= slv_reg8;
+	        5'h08   : reg_data_out <= fifo_track;
 	        5'h09   : reg_data_out <= slv_reg9;
 	        5'h0A   : reg_data_out <= slv_reg10;
 	        5'h0B   : reg_data_out <= slv_reg11;
@@ -640,18 +640,15 @@
         if(!S_AXI_ARESETN)                            
         begin                                        
             stream_data_to_tx <= 1;  
-            fifo_track <= 0;
         end                                          
         else 
         begin
             if (rx_enable)
             begin
                 stream_data_fifo[write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
-                fifo_track <= fifo_track + 1;
             end              
             if (tx_enable) 
             begin                                        
-                fifo_track <= fifo_track - 1;
                 //stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size)];// + 32'b1]; 
               
                 stream_data_to_tx[7:0] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][15:8];     // puts blue into green
@@ -660,7 +657,19 @@
             end
         end                                          
     end       
-	
+    
+    always @( posedge S_AXI_ACLK )                  
+    begin                                            
+        if(!S_AXI_ARESETN)                            
+            fifo_track <= 0;
+        else if(~(rx_enable ^ tx_enable))
+            fifo_track <= fifo_track;            
+        else if (rx_enable)
+            fifo_track <= fifo_track + 1;
+        else if (tx_enable)
+            fifo_track <= fifo_track - 1;
+    end      
+    
 	// User logic ends
 
 	endmodule

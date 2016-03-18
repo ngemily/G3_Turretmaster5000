@@ -50,7 +50,7 @@
 	// Define the states of state machine                                                
 	// The control state machine oversees the writing of input streaming data to the FIFO,
 	// and outputs the streaming data from the FIFO                                      
-	parameter [1:0] IDLE = 2'b00,        // This is the initial/idle state               
+	localparam [1:0] IDLE = 2'b00,        // This is the initial/idle state               
 	                                                                                     
 	                INIT_COUNTER  = 2'b01, // This state initializes the counter, ones   
 	                                // the counter reaches C_M_START_COUNT count,        

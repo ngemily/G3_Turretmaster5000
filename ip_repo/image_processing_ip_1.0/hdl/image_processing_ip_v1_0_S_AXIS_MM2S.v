@@ -45,7 +45,7 @@
 	// Define the states of state machine
 	// The control state machine oversees the writing of input streaming data to the FIFO,
 	// and outputs the streaming data from the FIFO
-	parameter [1:0] IDLE = 1'b0,        // This is the initial/idle state 
+	localparam [1:0] IDLE = 1'b0,        // This is the initial/idle state 
 
 	                WRITE_FIFO  = 1'b1; // In this state FIFO is written with the
 	                                    // input stream data S_AXIS_TDATA 

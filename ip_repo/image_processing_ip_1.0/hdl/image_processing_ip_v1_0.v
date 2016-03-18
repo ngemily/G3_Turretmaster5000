@@ -4,10 +4,11 @@
 	module image_processing_ip_v1_0 #
 	(
 		// Users to add parameters here
+		// Frame height
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
 		parameter integer AXIS_TDATA_WIDTH	= 24,
-		parameter integer FIFO_SIZE = 1024,
+		parameter integer FIFO_SIZE = 2048,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -16,16 +17,12 @@
 		parameter integer C_S_AXI_LITE_DATA_WIDTH	= 32,
 		parameter integer C_S_AXI_LITE_ADDR_WIDTH	= 7,
 
-		// Parameters of Axi Slave Bus Interface S_AXIS_MM2S
-		parameter integer C_S_AXIS_MM2S_TDATA_WIDTH	= 24,
-
+		// Parameters of Axi Slave Bus Interface
 		// Parameters of Axi Master Bus Interface M_AXIS_S2MM
-		parameter integer C_M_AXIS_S2MM_TDATA_WIDTH	= 24,
 		parameter integer C_M_AXIS_S2MM_START_COUNT	= 64
 	)
 	(
 		// Users to add ports here
-
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -57,8 +54,8 @@
 		input wire  s_axis_mm2s_aclk,
 		input wire  s_axis_mm2s_aresetn,
 		output wire  s_axis_mm2s_tready,
-		input wire [C_S_AXIS_MM2S_TDATA_WIDTH-1 : 0] s_axis_mm2s_tdata,
-		input wire [(C_S_AXIS_MM2S_TDATA_WIDTH/8)-1 : 0] s_axis_mm2s_tstrb,
+		input wire [AXIS_TDATA_WIDTH-1 : 0] s_axis_mm2s_tdata,
+		input wire [(AXIS_TDATA_WIDTH/8)-1 : 0] s_axis_mm2s_tstrb,
 		input wire  s_axis_mm2s_tlast,
 		input wire  s_axis_mm2s_tvalid,
 
@@ -66,8 +63,8 @@
 		input wire  m_axis_s2mm_aclk,
 		input wire  m_axis_s2mm_aresetn,
 		output wire  m_axis_s2mm_tvalid,
-		output wire [C_M_AXIS_S2MM_TDATA_WIDTH-1 : 0] m_axis_s2mm_tdata,
-		output wire [(C_M_AXIS_S2MM_TDATA_WIDTH/8)-1 : 0] m_axis_s2mm_tstrb,
+		output wire [AXIS_TDATA_WIDTH-1 : 0] m_axis_s2mm_tdata,
+		output wire [(AXIS_TDATA_WIDTH/8)-1 : 0] m_axis_s2mm_tstrb,
 		output wire  m_axis_s2mm_tlast,
 		input wire  m_axis_s2mm_tready
 	);
@@ -106,7 +103,7 @@
         .AXIS_TDATA_WIDTH(AXIS_TDATA_WIDTH),
         .FIFO_SIZE(FIFO_SIZE),
         .fifo_bits(fifo_bits),
-        .line_bits(line_bits)  
+        .line_bits(line_bits)
         
 	) image_processing_ip_v1_0_S_AXI_LITE_inst (
 	
