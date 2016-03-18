@@ -34,6 +34,8 @@ static void vdmaInputError(void *CallBackRef, u32 InterruptTypes)
 static void vdmaOutputComplete(void *CallBackRef, u32 InterruptTypes)
 {
     xil_printf("vdmaOutputComplete\n\r");
+	video_set_input_enabled(1);
+	video_set_output_enabled(1);
 }
 static void vdmaOutputError(void *CallBackRef, u32 InterruptTypes)
 {

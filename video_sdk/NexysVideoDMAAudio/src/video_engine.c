@@ -191,6 +191,20 @@ XStatus video_set_input_enabled(int enable) {
     } else if (VIDEO_DISCONNECTED == videoCaptPtr->state) {
         print("Video Diconnected, can't enable!!\n\r");
         return XST_FAILURE;
+    } else {
+    	print("No change to video input state\n\r");
+    }
+
+    return XST_SUCCESS;
+}
+
+XStatus video_set_output_enabled(int enable) {
+    if (!enable && DISPLAY_RUNNING == dispCtrl.state) {
+        DisplayStop(&dispCtrl);
+    } else if (enable && DISPLAY_STOPPED == dispCtrl.state) {
+    	DisplayStart(&dispCtrl);
+    } else {
+    	print("No change to display state\n\r");
     }
 
     return XST_SUCCESS;
