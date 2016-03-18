@@ -6,6 +6,7 @@
 		// Users to add parameters here
         parameter integer FRAME_WIDTH = 1280,
         parameter integer FRAME_HEIGHT = 720,
+		parameter integer AXIS_TDATA_WIDTH	= 24,
 		// User parameters ends
 		// Do not modify the parameters beyond this line
 
@@ -16,14 +17,19 @@
 	)
 	(
 		// Users to add ports here
+        input wire [bit_num-1:0] write_pointer,
+        input wire [bit_num-1:0] read_pointer,
+        input wire rx_enable,
+        input wire tx_enable,
+	    input wire [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
+	    output reg [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         input wire rx_mst_exec_state,        
         input wire [1:0] tx_mst_exec_state,     
-        input wire [bit_num-1:0] read_pointer,
-        input wire [bit_num-1:0] write_pointer,
         input wire mm2s_tready,
         input wire mm2s_tvalid,
         input wire s2mm_tvalid,
         input wire s2mm_tready,
+          
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -619,6 +625,8 @@
 
 	// Add user logic here
 	
+	localparam fifo_size = 1024;
+
 	// function called clogb2 that returns an integer which has the 
 	// value of the ceiling of the log base 2.
 	function integer clogb2 (input integer bit_depth);
@@ -632,6 +640,34 @@
 	localparam NUMBER_OF_INPUT_WORDS  = FRAME_WIDTH;
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);	
+	
+    reg  [AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : fifo_size-1];
+
+    // Streaming input data is stored in FIFO
+    always @( posedge S_AXI_ACLK )
+    begin
+      if (rx_enable)
+        begin
+          stream_data_fifo[write_pointer % fifo_size] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
+        end  
+    end  
+
+    always @( posedge S_AXI_ACLK )                  
+    begin                                            
+      if(!S_AXI_ARESETN)                            
+        begin                                        
+          stream_data_to_tx <= 1;                      
+        end                                          
+      else if (tx_enable) 
+        begin                                        
+          //stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size)];// + 32'b1]; 
+          
+          stream_data_to_tx[7:0] <= stream_data_fifo[(read_pointer % fifo_size)][15:8];     // puts blue into green
+          stream_data_to_tx[15:8] <= stream_data_fifo[(read_pointer % fifo_size)][7:0];     // puts green into blue
+          stream_data_to_tx[23:16] <= stream_data_fifo[(read_pointer % fifo_size)][23:16];  // keeps red the same
+
+        end                                          
+    end       
 	
 	// User logic ends
 

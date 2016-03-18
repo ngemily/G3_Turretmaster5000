@@ -16,11 +16,12 @@
 	)
 	(
 		// Users to add ports here
-        //input wire [bit_num-1:0] write_pointer,
+        input wire [bit_num-1:0] write_pointer,
         output reg [bit_num-1:0] read_pointer,
-        output reg [1:0] mst_exec_state,                                                    
         output wire tx_enable,
-	    input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+        input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+        output reg [1:0] mst_exec_state,                                                    
+
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -215,26 +216,24 @@
 
 	//FIFO read enable generation 
 
-	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
-	    always @( posedge M_AXIS_ACLK )                  
-	    begin                                            
-	      if(!M_AXIS_ARESETN)                            
-	        begin                                        
-	          stream_data_out <= 1;                      
-	        end                                          
-	      else if (tx_en)// && M_AXIS_TSTRB[byte_index]  
-	        begin                                        
-	          stream_data_out <= stream_data_to_tx; //stream_data_fifo[(read_pointer % fifo_size) + 32'b1];   
-	        end                                          
-	    end                                              
-
+/*
+    always @( posedge M_AXIS_ACLK )                  
+    begin                                            
+      if(!M_AXIS_ARESETN)                            
+        begin                                        
+          stream_data_out <= 1;                      
+        end                                          
+      else if (tx_en)// && M_AXIS_TSTRB[byte_index]  
+        begin                                        
+          stream_data_out <= stream_data_to_tx; //stream_data_fifo[(read_pointer % fifo_size) + 32'b1];   
+        end                                          
+    end                                              
+*/
 	// Add user logic here
+	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
 	assign tx_enable = tx_en;   
+	assign M_AXIS_TDATA = stream_data_to_tx;    
 	
-	assign M_AXIS_TDATA[7:0] = stream_data_to_tx[15:8];     // puts blue into green
-    assign M_AXIS_TDATA[15:8] = stream_data_to_tx[7:0];     // puts green into blue
-    assign M_AXIS_TDATA[23:16] = stream_data_to_tx[23:16];  // keeps red the same
-		                                                  
 	// User logic ends
 
 	endmodule

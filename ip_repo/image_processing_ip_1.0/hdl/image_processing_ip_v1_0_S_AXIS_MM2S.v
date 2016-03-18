@@ -14,12 +14,11 @@
 	)
 	(
 		// Users to add ports here
-        //output reg [bit_num-1:0] write_pointer,
-        input wire [bit_num-1:0] read_pointer,
         output reg [bit_num-1:0] write_pointer,
+        input wire [bit_num-1:0] read_pointer,
+        output wire rx_enable,
+	    output wire [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
         output reg mst_exec_state,                                                    
-        input wire tx_enable,
-	    output reg  [C_S_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -52,7 +51,6 @@
 	// bit_num gives the minimum number of bits needed to address 'NUMBER_OF_INPUT_WORDS' size of FIFO.
 	localparam bit_num  = clogb2(NUMBER_OF_INPUT_WORDS-1);
 	
-	localparam fifo_size = 1024;
 	// Define the states of state machine
 	// The control state machine oversees the writing of input streaming data to the FIFO,
 	// and outputs the streaming data from the FIFO
@@ -151,7 +149,9 @@
 
 	// FIFO write enable generation
 	assign fifo_wren = S_AXIS_TVALID && axis_tready;
-
+	assign rx_enable = fifo_wren;
+	assign stream_data_from_rx[C_S_AXIS_TDATA_WIDTH-1:0] = S_AXIS_TDATA[C_S_AXIS_TDATA_WIDTH-1:0];
+/*
 	// FIFO Implementation
 	//generate 
 	//  for(byte_index=0; byte_index<= (C_S_AXIS_TDATA_WIDTH/8-1); byte_index=byte_index+1)
@@ -183,7 +183,7 @@
 	          stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size)];// + 32'b1];   
 	        end                                          
 	    end   	
-    
+    */
     // User logic ends
 
 	endmodule
