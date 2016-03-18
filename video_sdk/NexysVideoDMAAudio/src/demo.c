@@ -102,7 +102,7 @@
 #define SD_GPIO_CARD_PRESENT_MASK (0x00000001)
 #define SD_GPIO_DEVICE_ID   XPAR_GPIO_0_DEVICE_ID
 #define INTC_DEVICE_ID		XPAR_INTC_0_DEVICE_ID
-#define SD_GPIO_CHANNEL	    1
+#define SD_GPIO_CHANNEL	    2
 
 
 /**************************** Type Definitions *******************************/
@@ -126,6 +126,7 @@ static void LaserTest();
 static void MotorPatternTest();
 static void stopTest();
 
+void ButtonIsr(void *InstancePtr);
 
 /************************** Variable Definitions *****************************/
 /*
@@ -165,6 +166,8 @@ const ivt_t ivt[] = {
     {XPAR_MICROBLAZE_0_AXI_INTC_V_TC_1_IRQ_INTR,                  (XInterruptHandler)XVtc_IntrHandler, &(sVideoCapt.vtc)},
     //Video GPIO Interrupt handler
     {XPAR_MICROBLAZE_0_AXI_INTC_AXI_GPIO_VIDEO_IP2INTC_IRPT_INTR, (XInterruptHandler)GpioIsr, &sVideoCapt},
+
+    {XPAR_INTC_0_GPIO_0_VEC_ID, (XInterruptHandler)ButtonIsr, &sGpio},
 };
 
 static TCHAR Buff[100];
@@ -230,7 +233,7 @@ void uart_rec_audio(void) {
  void loadSounds(void) {
 	 loadSongIntoMemory(SOUND_ID_MACHINE_GUN, GUN_PATH);
 	 loadSongIntoMemory(SOUND_ID_PORTAL_GUN, PORTAL_GUN_PATH);
-	 loadSongIntoMemory(SOUND_ID_TARGET_ACQUIRED, TARGET_PATH);
+	 //loadSongIntoMemory(SOUND_ID_TARGET_ACQUIRED, TARGET_PATH);
 	 //loadSongIntoMemory(SOUND_ID_STILL_ALIVE, SONG_PATH);
  }
 
@@ -430,6 +433,10 @@ static int SetupSdGpio(XGpio *sGpio) {
 
     // Set the direction for all signals to be inputs.
     XGpio_SetDataDirection(sGpio, SD_GPIO_CHANNEL, SD_GPIO_CARD_PRESENT_MASK);
+    XGpio_SetDataDirection(sGpio, 1, ~0);
+
+    XGpio_InterruptEnable(sGpio, XGPIO_IR_CH1_MASK);
+    XGpio_InterruptGlobalEnable(sGpio);
 
     XGpio_SelfTest(sGpio);
 
@@ -572,6 +579,22 @@ static void MotorPatternTest() {
     }
 }
 
+void ButtonIsr(void *InstancePtr) {
+	XGpio *GpioPtr = (XGpio *) InstancePtr;
+	u32 buttons;
+
+	XGpio_InterruptClear(GpioPtr, XGPIO_IR_CH1_MASK);
+	xil_printf("in button ISR.\r\n");
+
+	buttons = XGpio_DiscreteRead(GpioPtr, 1) & 0x1F;
+
+	if (buttons & 0x1) {
+		playGunSound();
+	} else if (buttons & 0x2) {
+		playPortalGunSound();
+	}
+
+}
 
 static void stopTest() {
     continueTest = false;
