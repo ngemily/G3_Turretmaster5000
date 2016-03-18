@@ -598,6 +598,11 @@ static void stopTest() {
     continueTest = false;
 }
 
+static void main_loop(void) {
+	TargetingState state = get_targeting_state();
+	// TODO
+}
+
 
 
 

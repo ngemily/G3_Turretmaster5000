@@ -11,8 +11,19 @@
 #include <xstatus.h>
 #include <xaxivdma.h>
 
-XStatus initialize_targeting(XAxiVdma *targetingDmaPtr);
-XStatus targeting_begin_transfer(XAxiVdma *dmaPtr);
-void    print_ip_info(void);
+typedef struct {
+	u16 x;
+	u16 y;
+} location_t;
+
+typedef struct {
+	location_t laser;
+	location_t target;
+} TargetingState;
+
+XStatus        initialize_targeting(XAxiVdma *targetingDmaPtr);
+XStatus        targeting_begin_transfer(XAxiVdma *dmaPtr);
+void           print_ip_info(void);
+TargetingState get_targeting_state(void);
 
 #endif /* TARGETING_ENGINE_H_ */

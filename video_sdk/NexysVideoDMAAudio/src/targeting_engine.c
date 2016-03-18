@@ -16,6 +16,7 @@
 #include "demo.h"
 
 static XAxiVdma *vdmaPtr;
+volatile TargetingIPStatus *targetingIp;
 
 XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
     int status = XST_SUCCESS;
@@ -46,6 +47,16 @@ XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
 
 XStatus targeting_begin_transfer(XAxiVdma *dmaPtr) {
     return fnStartTargetingDmaInOut(dmaPtr, 0, 1);
+}
+
+TargetingState get_targeting_state(void) {
+	TargetingState state;
+	while (!targetingIp->dataValid);
+	state.laser.x = targetingIp->laserLocation.x;
+	state.laser.y = targetingIp->laserLocation.y;
+	state.target.x = 0; // TODO
+	state.target.y = 0; // TODO
+	return state;
 }
 
 void print_ip_info(void) {
