@@ -16,7 +16,7 @@
 
 #include "diskio.h"
 
-#define SLOW_MODE
+//#define SLOW_MODE
 #define DEBUG_SD
 #ifdef DEBUG_SD
 	#define SD_DEBUG_PRINT(...) xil_printf(__VA_ARGS__)

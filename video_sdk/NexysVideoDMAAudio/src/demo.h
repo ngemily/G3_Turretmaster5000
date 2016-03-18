@@ -57,8 +57,11 @@
 #define MAX_SONG_LENGTH (0x800000)
 
 // for now, while we debug the random reset issue, we'll set the max length lower
-#define MAX_PLAYBACK_LENGTH (10 * 96000)
+#define MAX_PLAYBACK_LENGTH (15 * 96000)
 #define SONG_PATH "song.raw"
+#define GUN_PATH "gun.raw"
+#define PORTAL_GUN_PATH "portal.raw"
+#define TARGET_PATH "target.raw"
 
 
 typedef enum {

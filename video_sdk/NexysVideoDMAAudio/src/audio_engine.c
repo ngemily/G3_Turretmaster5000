@@ -100,8 +100,13 @@ XStatus play_audio(u32 *baseAddr, int numBytes) {
 
 	print("Start Playing Audio\n\r");
 
+	numBytes >>= 2;
+	if (numBytes > MAX_PLAYBACK_LENGTH) {
+		numBytes = MAX_PLAYBACK_LENGTH;
+	}
+
 	audio_codec_busy = 1;
-	fnAudioPlay(*sAxiDmaPtr, AUDIO_BASE_ADDR, (u32) RECORD_LENGTH);
+	fnAudioPlay(*sAxiDmaPtr, (u32) baseAddr, (u32) numBytes);
 //	while (XAxiDma_Busy(sAxiDmaPtr, XAXIDMA_DMA_TO_DEVICE)) {
 //		if (audio_dma_error) {
 //			break;

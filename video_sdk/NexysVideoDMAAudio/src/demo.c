@@ -143,6 +143,7 @@ static VideoCapture	sVideoCapt;
 // static variables storing information about what sounds are available, and
 // where they are stored on the SD card.
 static AudioClip sSoundBoard[SOUND_ID_MAX] = {};
+static u32 *sSoundTip;
 
 volatile int numInterrupts;
 
@@ -196,45 +197,83 @@ void uart_rec_audio(void) {
 	 play_audio( (u32 *) AUDIO_BASE_ADDR, RECORD_LENGTH);
  }
 
+ void loadSongIntoMemory(SoundIndex soundIndex, char *name) {
+		FATFS FatFs;
+		FIL FHandle;
+		UINT numBytesRead;
+		u32 *buff = sSoundTip;
+		FRESULT result;
 
- void loadSongIntoMemory(void) {
-	FATFS FatFs;
-	FIL FHandle;
-	UINT numBytesRead;
-	u32 *buff = (u32 *) AUDIO_BASE_ADDR;
-	FRESULT result;
+		if (f_mount(&FatFs, "", 0) != FR_OK) {
+		   	xil_printf("Failed to mount filesystem.\n\r");
+		   	return;
+		}
 
-	if (f_mount(&FatFs, "", 0) != FR_OK) {
-	   	xil_printf("Failed to mount filesystem.\n\r");
-	   	return;
-	}
+		if ((result = f_open(&FHandle, name, FA_READ)) != FR_OK) {
+		   	xil_printf("Failed to f_open %s: %d .\n\r", name, result);
+			return;
+		}
 
-	if ((result = f_open(&FHandle, SONG_PATH, FA_READ)) != FR_OK) {
-	   	xil_printf("Failed to f_open %s: %d .\n\r", SONG_PATH, result);
-		return;
-	}
+		if ((result = f_read(&FHandle, (void *) buff, MAX_SONG_LENGTH, &numBytesRead)) != FR_OK) {
+		   	xil_printf("Failed to f_read %s: %d.\n\r", name, result);
+			return;
+		}
 
-	if ((result = f_read(&FHandle, (void *) buff, MAX_SONG_LENGTH, &numBytesRead)) != FR_OK) {
-	   	xil_printf("Failed to f_read %s: %d.\n\r", SONG_PATH, result);
-		return;
-	}
+		sSoundBoard[soundIndex].baseAddr = (u32 *) sSoundTip;
+		sSoundBoard[soundIndex].length = numBytesRead;
+		sSoundBoard[soundIndex].loaded = true;
 
-	sSoundBoard[SOUND_ID_STILL_ALIVE].baseAddr = (u32 *) AUDIO_BASE_ADDR;
-	sSoundBoard[SOUND_ID_STILL_ALIVE].length = numBytesRead;
-	sSoundBoard[SOUND_ID_STILL_ALIVE].loaded = true;
+		// Update the tip of the sound memory region.
+		sSoundTip += (numBytesRead >> 2);
+ }
 
-	xil_printf("Portal song is %d bytes long.\r\n", sSoundBoard[SOUND_ID_STILL_ALIVE].length);
+ void loadSounds(void) {
+	 loadSongIntoMemory(SOUND_ID_MACHINE_GUN, GUN_PATH);
+	 loadSongIntoMemory(SOUND_ID_PORTAL_GUN, PORTAL_GUN_PATH);
+	 loadSongIntoMemory(SOUND_ID_TARGET_ACQUIRED, TARGET_PATH);
+	 //loadSongIntoMemory(SOUND_ID_STILL_ALIVE, SONG_PATH);
  }
 
 
  void playPortalSong(void) {
 	 if (sSoundBoard[SOUND_ID_STILL_ALIVE].loaded) {
 		 play_audio(sSoundBoard[SOUND_ID_STILL_ALIVE].baseAddr,
-				    sSoundBoard[SOUND_ID_STILL_ALIVE].length >> 2);
+				    sSoundBoard[SOUND_ID_STILL_ALIVE].length);
 	 } else {
 		 xil_printf("Portal song not loaded yet!\r\n");
 	 }
  }
+
+
+ void playGunSound(void) {
+	 if (sSoundBoard[SOUND_ID_MACHINE_GUN].loaded) {
+		 play_audio(sSoundBoard[SOUND_ID_MACHINE_GUN].baseAddr,
+				    sSoundBoard[SOUND_ID_MACHINE_GUN].length);
+	 } else {
+		 xil_printf("Gun sound not loaded yet!\r\n");
+	 }
+ }
+
+
+ void playPortalGunSound(void) {
+	 if (sSoundBoard[SOUND_ID_PORTAL_GUN].loaded) {
+		 play_audio(sSoundBoard[SOUND_ID_PORTAL_GUN].baseAddr,
+				    sSoundBoard[SOUND_ID_PORTAL_GUN].length);
+	 } else {
+		 xil_printf("Portal gun sound not loaded yet!\r\n");
+	 }
+ }
+
+
+ void playTargetAcquired(void) {
+	 if (sSoundBoard[SOUND_ID_TARGET_ACQUIRED].loaded) {
+		 play_audio(sSoundBoard[SOUND_ID_TARGET_ACQUIRED].baseAddr,
+				    sSoundBoard[SOUND_ID_TARGET_ACQUIRED].length);
+	 } else {
+		 xil_printf("Target Acquired not loaded yet!\r\n");
+	 }
+ }
+
 
 
 static void passthroughHdmi(void) {
@@ -326,6 +365,7 @@ int main(void)
     for (int i = 0; i < SOUND_ID_MAX; i++) {
     	sSoundBoard[i].loaded = false;
     }
+    sSoundTip = (u32 *) AUDIO_BASE_ADDR;
 
     fnEnableInterrupts(&sIntc, &ivt[0], sizeof(ivt)/sizeof(ivt[0]));
 
@@ -343,9 +383,12 @@ int main(void)
 	register_uart_response("motortest", MotorPatternTest);
 	register_uart_response("stop", stopTest);
 
-	register_uart_response("load", loadSongIntoMemory);
+	register_uart_response("load_sounds", loadSounds);
 
 	register_uart_response("still_alive", playPortalSong);
+	register_uart_response("gun", playGunSound);
+	register_uart_response("portal_gun", playPortalGunSound);
+	register_uart_response("target", playTargetAcquired);
 
 	register_uart_response("passthrough", passthroughHdmi);
 	register_uart_response("runip",       runImageProcessing);
