@@ -25,7 +25,8 @@
         input wire rx_enable,
         input wire tx_enable,
 	    input wire [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
-	    output reg [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+	    output wire [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+	    //output reg [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         output reg [fifo_bits-1:0] fifo_track,
         input wire rx_mst_exec_state,        
         input wire [1:0] tx_mst_exec_state,     
@@ -632,6 +633,7 @@
 
 	
     reg  [AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : FIFO_SIZE-1];
+    reg [AXIS_TDATA_WIDTH-1:0] stream_to_emily;
 
     // Streaming input data is stored in FIFO
 
@@ -639,7 +641,7 @@
     begin                                            
         if(!S_AXI_ARESETN)                            
         begin                                        
-            stream_data_to_tx <= 1;  
+            //stream_data_to_tx <= 1;  
         end                                          
         else 
         begin
@@ -649,14 +651,26 @@
             end              
             if (tx_enable) 
             begin                                        
-                //stream_data_to_tx <= stream_data_fifo[(read_pointer % fifo_size)];// + 32'b1]; 
+                stream_to_emily <= stream_data_fifo[(read_pointer % FIFO_SIZE)];// + 32'b1]; 
               
-                stream_data_to_tx[7:0] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][15:8];     // puts blue into green
-                stream_data_to_tx[15:8] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][7:0];     // puts green into blue
-                stream_data_to_tx[23:16] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][23:16];  // keeps red the same
+                //stream_data_to_tx[7:0] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][15:8];     // puts blue into green
+                //stream_data_to_tx[15:8] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][7:0];     // puts green into blue
+                //stream_data_to_tx[23:16] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][23:16];  // keeps red the same
             end
         end                                          
     end       
+    
+    top stuff(
+        .clk(S_AXI_ACLK),
+        .reset_n(S_AXI_ARESETN),
+        .en(tx_enable),
+        .hsync(1'b0),
+        .vsync(1'b0),
+        .data(stream_to_emily), // [`PIXEL_SIZE - 1:0] data,
+        .out(stream_data_to_tx) // [`PIXEL_SIZE - 1:0] out
+    );    
+    
+    
     
     always @( posedge S_AXI_ACLK )                  
     begin                                            

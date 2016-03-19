@@ -220,7 +220,7 @@
 	// Add user logic here
 	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
 	assign tx_enable = tx_en;   
-	assign M_AXIS_TDATA = stream_data_to_tx;    
+	assign M_AXIS_TDATA = { 3{stream_data_to_tx[15:8]} };    
 	
 	// User logic ends
 
