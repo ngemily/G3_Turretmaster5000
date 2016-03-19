@@ -13,6 +13,11 @@ Steps to generate the project:
 7) Generate the linker script for the "turretcontrol" project.
 8) Build the sources and program the board as per the tutorials.
 
+Alternate steps to 2-4 above:
+2-3) Compile and export hardware
+   vivado -mode batch -source compile_project.tcl
+4) Launch SDK
+   vivado -mode batch -source launch_sdk.tcl
 
 
 How to generate files that play correctly on the board:
@@ -29,9 +34,8 @@ How to generate files that play correctly on the board:
 When read off of the Sd card into memory and played, it shouldn't sound like 
 terrible static.
 
-Update the video processing ip core:
+
+How to update the video processing ip core:
     
     git submodule init
     git submodule update 
-    cd ip_repo/image_processing_ip_1.0/hdl/core
-    git pull origin master
