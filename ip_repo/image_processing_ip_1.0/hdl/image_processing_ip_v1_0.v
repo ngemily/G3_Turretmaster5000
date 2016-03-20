@@ -84,8 +84,8 @@
     
     wire  [line_bits-1:0] write_pointer;
     wire  [line_bits-1:0] read_pointer;
-    wire  rx_enable;
-    wire  tx_enable;
+    wire  rx_en;
+    wire  tx_en;
     wire  [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx;
     wire  [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx;
     wire  [fifo_bits-1:0] fifo_track;
@@ -109,8 +109,8 @@
 	
         .write_pointer(write_pointer),
         .read_pointer(read_pointer),
-        .rx_enable(rx_enable),
-        .tx_enable(tx_enable),
+        .rx_en(rx_en),
+        .tx_en(tx_en),
         .stream_data_from_rx(stream_data_from_rx),
         .stream_data_to_tx(stream_data_to_tx),
         .fifo_track(fifo_track),
@@ -159,7 +159,7 @@
 	
         .write_pointer(write_pointer),
         .read_pointer(read_pointer),
-        .rx_enable(rx_enable),
+        .rx_en(rx_en),
         .stream_data_from_rx(stream_data_from_rx),
         .mst_exec_state(rx_mst_exec_state),
         .fifo_track(fifo_track),
@@ -188,7 +188,7 @@
 	
         .write_pointer(write_pointer),
         .read_pointer(read_pointer),
-        .tx_enable(tx_enable),
+        .tx_en(tx_en),
         .stream_data_to_tx(stream_data_to_tx),
         .fifo_track(fifo_track),
         

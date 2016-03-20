@@ -22,11 +22,10 @@
 		// Users to add ports here
         input wire [line_bits-1:0] write_pointer,
         input wire [line_bits-1:0] read_pointer,
-        input wire rx_enable,
-        input wire tx_enable,
+        input wire rx_en,
+        input wire tx_en,
 	    input wire [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
 	    output wire [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
-	    //output reg [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         output reg [fifo_bits-1:0] fifo_track,
         input wire rx_mst_exec_state,        
         input wire [1:0] tx_mst_exec_state,     
@@ -631,11 +630,10 @@
 	// Add user logic here
 	
 
-	
-    reg  [AXIS_TDATA_WIDTH-1:0] stream_data_fifo [0 : FIFO_SIZE-1];
-    reg [AXIS_TDATA_WIDTH-1:0] stream_to_emily;
-
     // Streaming input data is stored in FIFO
+    reg [AXIS_TDATA_WIDTH-1:0] rx_fifo [0 : FIFO_SIZE-1];
+    reg [AXIS_TDATA_WIDTH-1:0] stream_to_emily;
+    wire [AXIS_TDATA_WIDTH-1:0] stream_from_emily;
 
     always @( posedge S_AXI_ACLK )                  
     begin                                            
@@ -645,17 +643,23 @@
         end                                          
         else 
         begin
-            if (rx_enable)
+            if (rx_en)
             begin
-                stream_data_fifo[write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
-            end              
-            if (tx_enable) 
+                rx_fifo[rx_write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
+            end  
+            if (emily_en)
+            begin
+                stream_to_emily <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
+            
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_emily;
+            end     
+            if (tx_en) 
             begin                                        
-                stream_to_emily <= stream_data_fifo[(read_pointer % FIFO_SIZE)];// + 32'b1]; 
+                stream_to_emily <= tx_fifo[(read_pointer % FIFO_SIZE)];// + 32'b1]; 
               
-                //stream_data_to_tx[7:0] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][15:8];     // puts blue into green
-                //stream_data_to_tx[15:8] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][7:0];     // puts green into blue
-                //stream_data_to_tx[23:16] <= stream_data_fifo[(read_pointer % FIFO_SIZE)][23:16];  // keeps red the same
+                //stream_data_to_tx[7:0] <= tx_fifo[(read_pointer % FIFO_SIZE)][15:8];     // puts blue into green
+                //stream_data_to_tx[15:8] <= tx_fifo[(read_pointer % FIFO_SIZE)][7:0];     // puts green into blue
+                //stream_data_to_tx[23:16] <= tx_fifo[(read_pointer % FIFO_SIZE)][23:16];  // keeps red the same
             end
         end                                          
     end       
@@ -665,25 +669,25 @@
     top stuff(
         .clk(S_AXI_ACLK),
         .reset_n(S_AXI_ARESETN),
-        .en(tx_enable),
+        .en(emily_en),
         .hsync(1'b0),
         .vsync(1'b0),
         .mode(mode),
         .data(stream_to_emily), // [`PIXEL_SIZE - 1:0] data,
-        .out(stream_data_to_tx) // [`PIXEL_SIZE - 1:0] out
+        .out(stream_from_emily) // [`PIXEL_SIZE - 1:0] out
     );    
     
-    
+	assign stream_data_to_tx = { 3{stream_from_emily[15:8]} };    
     
     always @( posedge S_AXI_ACLK )                  
     begin                                            
         if(!S_AXI_ARESETN)                            
             fifo_track <= 0;
-        else if(~(rx_enable ^ tx_enable))
+        else if(~(rx_en ^ tx_en))
             fifo_track <= fifo_track;            
-        else if (rx_enable)
+        else if (rx_en)
             fifo_track <= fifo_track + 1;
-        else if (tx_enable)
+        else if (tx_en)
             fifo_track <= fifo_track - 1;
     end      
     

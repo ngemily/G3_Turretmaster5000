@@ -23,7 +23,7 @@
 		// Users to add ports here
         input wire [line_bits-1:0] write_pointer,
         output reg [line_bits-1:0] read_pointer,
-        output wire tx_enable,
+        output wire tx_en,
         input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         input wire [fifo_bits-1:0] fifo_track,
         output reg [1:0] mst_exec_state,                                                    
@@ -75,7 +75,6 @@
 	reg  	axis_tlast_delay;
 	//FIFO implementation signals
 	reg     [C_M_AXIS_TDATA_WIDTH-1 : 0] 	stream_data_out;
-	wire  	tx_en;
 	//The master has issued all the streaming data stored in FIFO
 	reg  	tx_done;
 
@@ -200,27 +199,12 @@
 	        end     
         end                                                                   
 	end                                                                              
+                                    
 
-
-	//FIFO read enable generation 
-
-/*
-    always @( posedge M_AXIS_ACLK )                  
-    begin                                            
-      if(!M_AXIS_ARESETN)                            
-        begin                                        
-          stream_data_out <= 1;                      
-        end                                          
-      else if (tx_en)// && M_AXIS_TSTRB[byte_index]  
-        begin                                        
-          stream_data_out <= stream_data_to_tx; //stream_data_fifo[(read_pointer % fifo_size) + 32'b1];   
-        end                                          
-    end                                              
-*/
 	// Add user logic here
 	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
-	assign tx_enable = tx_en;   
-	assign M_AXIS_TDATA = stream_data_to_tx;
+	assign M_AXIS_TDATA = stream_data_to_tx;    
+
 	
 	// User logic ends
 
