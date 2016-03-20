@@ -139,6 +139,8 @@ static void ManualMainLoop(void);
 static void AutoMainLoop(void);
 static void EnterManualMainLoop(void);
 static void EnterAutomaticMainLoop(void);
+static void EnterLaserTest(void);
+static void EnterMotorTest(void);
 
 /************************** Variable Definitions *****************************/
 /*
@@ -158,9 +160,16 @@ static VideoCapture	sVideoCapt;
 static AudioClip sSoundBoard[SOUND_ID_MAX] = {};
 static u32 *sSoundTip;
 
+volatile static enum {
+	DEFAULT_LOOP = 0,
+	MANUAL_MODE,
+	AUTOMATIC_MODE,
+	LASER_TEST,
+	MOTOR_TEST,
+} sLoopSelect;
+
+
 volatile static u32 sButtonState;
-volatile static bool sEnterManualLoop;
-volatile static bool sEnterAutomatedLoop;
 
 // Interrupt vector table
 const ivt_t ivt[] = {
@@ -399,8 +408,8 @@ int main(void)
     sSoundTip = (u32 *) AUDIO_BASE_ADDR;
 
     sButtonState = 0;
-    sEnterManualLoop = false;
-    sEnterAutomatedLoop = false;
+
+    sLoopSelect = DEFAULT_LOOP;
     fnEnableInterrupts(&sIntc, &ivt[0], sizeof(ivt)/sizeof(ivt[0]));
 
 	register_uart_response("test", test_fcn);
@@ -413,8 +422,8 @@ int main(void)
 	// Commands to run self-tests
 	register_uart_response("lowlevel", LowLevelTest);
 	register_uart_response("highlevel", HighLevelTest);
-	register_uart_response("lasertest", LaserTest);
-	register_uart_response("motortest", MotorPatternTest);
+	register_uart_response("lasertest", EnterLaserTest);
+	register_uart_response("motortest", EnterMotorTest);
 	register_uart_response("stop", stopTest);
 
 	register_uart_response("load_sounds", loadSounds);
@@ -444,12 +453,12 @@ int main(void)
 
 	xil_printf(PROMPT_STRING);
 	while (do_run) {
-		if (sEnterManualLoop) {
-			ManualMainLoop();
-		} else if (sEnterAutomatedLoop){
-			AutoMainLoop();
-		} else {
-			MB_Sleep(1000);
+		switch (sLoopSelect) {
+			case MANUAL_MODE: ManualMainLoop(); break;
+			case AUTOMATIC_MODE: AutoMainLoop(); break;
+			case LASER_TEST: LaserTest(); break;
+			case MOTOR_TEST: MotorPatternTest(); break;
+			default: MB_Sleep(100); break;
 		}
 	}
 
@@ -615,9 +624,13 @@ static void MotorPatternTest() {
             MB_Sleep(15);
         }
         MB_Sleep(20);
-
     }
+
+    TurnOffLaser();
+    DisablePanServo();
+    DisableTiltServo();
 }
+
 
 void ButtonIsr(void *InstancePtr) {
 	XGpio *GpioPtr = (XGpio *) InstancePtr;
@@ -627,36 +640,42 @@ void ButtonIsr(void *InstancePtr) {
 
 	sButtonState = XGpio_DiscreteRead(GpioPtr, 1) & 0x1F;
 
-	if (continueTest && sEnterManualLoop) {
+	if (continueTest && sLoopSelect == MANUAL_MODE) {
 		if (sButtonState & BUTTON_CENTER) {
 			playGunSound();
 		}
 	}
-
-
 }
+
 
 static void stopTest() {
     continueTest = false;
+	sLoopSelect = DEFAULT_LOOP;
 }
 
+
 static void AutoMainLoop(void) {
-
-
 	continueTest = true;
 	xil_printf("Entering manual mode.\r\n");
 	while(continueTest) {
 		TargetingState state = get_targeting_state();
 		MB_Sleep(1000);
 	}
-	sEnterAutomatedLoop = false;
 }
 
 void ManualMainLoop(void) {
+	// Set up the turret control IP.
+    InitMotorBoard();
+    TurnOnLaser();
+    EnablePanServo();
+    EnableTiltServo();
+    SetTiltAngle(0);
+    SetPanAngle(0);
+
 	continueTest = true;
 	xil_printf("Entering manual mode.\r\n");
 	while(continueTest) {
-
+		// We allow users to press more than one button at a time.
 		if (sButtonState & BUTTON_LEFT) {
 			PanLeft(1);
 		}
@@ -673,17 +692,35 @@ void ManualMainLoop(void) {
 			TiltDown(1);
 		}
 
-		MB_Sleep(100);
+		MB_Sleep(7);
 	}
-	sEnterManualLoop = false;
+
+	SetTiltAngle(0);
+	SetPanAngle(0);
+	MB_Sleep(100);
+	DisableTiltServo();
+	DisablePanServo();
+	TurnOffLaser();
 }
+
 
 void EnterManualMainLoop(void) {
-	sEnterManualLoop = true;
+	sLoopSelect = MANUAL_MODE;
 }
 
+
 static void EnterAutomaticMainLoop(void) {
-	sEnterAutomatedLoop = true;
+	sLoopSelect = AUTOMATIC_MODE;
+}
+
+
+static void EnterLaserTest(void) {
+	sLoopSelect = LASER_TEST;
+}
+
+
+static void EnterMotorTest(void) {
+	sLoopSelect = MOTOR_TEST;
 }
 
 
