@@ -659,6 +659,8 @@
             end
         end                                          
     end       
+
+    wire [`WORD_SIZE - 1:0] mode = (1 << `OUT);
     
     top stuff(
         .clk(S_AXI_ACLK),
@@ -666,6 +668,7 @@
         .en(tx_enable),
         .hsync(1'b0),
         .vsync(1'b0),
+        .mode(mode),
         .data(stream_to_emily), // [`PIXEL_SIZE - 1:0] data,
         .out(stream_data_to_tx) // [`PIXEL_SIZE - 1:0] out
     );    
