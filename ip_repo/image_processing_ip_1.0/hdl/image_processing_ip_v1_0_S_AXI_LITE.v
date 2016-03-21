@@ -659,7 +659,7 @@
                 rx_fifo[rx_write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
             end  
             
-            if (core_en & (stream_mode == 2'b00))
+            if (core_en & (stream_mode == 2'b10))
             //begin
             //    if (core_out_valid)
                 begin
@@ -671,14 +671,14 @@
        //             stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
        //         end
        //     end             
-            else if (stream_mode == 2'b01)
+            else if (core_en & (stream_mode == 2'b01))
             begin  
                 stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)][7:0] <= stream_to_core[15:8];       // puts blue into green
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)][15:8] <= stream_to_core[7:0];       // puts green into blue
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)][23:16] <= stream_to_core[23:16];    // keeps red the same
             end
-            else if (stream_mode == 2'b10)
+            else if (core_en & (stream_mode == 2'b00))
             begin  
                 stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_to_core; 
