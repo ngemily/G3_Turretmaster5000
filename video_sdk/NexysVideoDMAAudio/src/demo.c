@@ -354,6 +354,10 @@ static void loopIp(void) {
 	}
 }
 
+static void SetColourPassthroughMode(void) {
+	SetOutputMode(1);
+}
+
 /*****************************************************************************/
 /**
 *
@@ -439,6 +443,8 @@ int main(void)
 	register_uart_response("ipinfo",      print_ip_info);
 	register_uart_response("720p",        r720p);
 	register_uart_response("loop",        loopIp);
+
+	register_uart_response("colour",        SetColourPassthroughMode);
 
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
