@@ -1,5 +1,6 @@
-
 `timescale 1 ns / 1 ps
+
+`include "global.vh"
 
 	module image_processing_ip_v1_0 #
 	(
@@ -82,13 +83,14 @@
 	localparam fifo_bits = clogb2(FIFO_SIZE-1);
     localparam count_bits = clogb2(C_M_AXIS_S2MM_START_COUNT-1);
     
-    wire  [line_bits-1:0] write_pointer;
-    wire  [line_bits-1:0] read_pointer;
+    wire  [line_bits-1:0] rx_write_pointer;
+    wire  [line_bits-1:0] tx_read_pointer;
     wire  rx_en;
     wire  tx_en;
     wire  [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx;
     wire  [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx;
-    wire  [fifo_bits-1:0] fifo_track;
+    wire  [fifo_bits-1:0] rx_fifo_track;
+    wire  [fifo_bits-1:0] tx_fifo_track;
     wire  rx_mst_exec_state;
     wire  [1:0] tx_mst_exec_state;        
 
@@ -107,15 +109,17 @@
         
 	) image_processing_ip_v1_0_S_AXI_LITE_inst (
 	
-        .write_pointer(write_pointer),
-        .read_pointer(read_pointer),
+        .rx_write_pointer(rx_write_pointer),
+        .tx_read_pointer(tx_read_pointer),
         .rx_en(rx_en),
         .tx_en(tx_en),
         .stream_data_from_rx(stream_data_from_rx),
         .stream_data_to_tx(stream_data_to_tx),
-        .fifo_track(fifo_track),
+        .rx_fifo_track(rx_fifo_track),
+        .tx_fifo_track(tx_fifo_track),
         .rx_mst_exec_state(rx_mst_exec_state),
         .tx_mst_exec_state(tx_mst_exec_state),
+        .AXIS_ARESETN(s_axis_mm2s_aresetn),
         
         .mm2s_tready(s_axis_mm2s_tready),
         .mm2s_tvalid(s_axis_mm2s_tvalid),
@@ -157,12 +161,11 @@
         
 	) image_processing_ip_v1_0_S_AXIS_MM2S_inst (
 	
-        .write_pointer(write_pointer),
-        .read_pointer(read_pointer),
+        .write_pointer(rx_write_pointer),
         .rx_en(rx_en),
         .stream_data_from_rx(stream_data_from_rx),
         .mst_exec_state(rx_mst_exec_state),
-        .fifo_track(fifo_track),
+        .rx_fifo_track(rx_fifo_track),
 
 		.S_AXIS_ACLK(s_axis_mm2s_aclk),
 		.S_AXIS_ARESETN(s_axis_mm2s_aresetn),
@@ -186,11 +189,10 @@
 
 	) image_processing_ip_v1_0_M_AXIS_S2MM_inst (
 	
-        .write_pointer(write_pointer),
-        .read_pointer(read_pointer),
+        .read_pointer(tx_read_pointer),
         .tx_en(tx_en),
         .stream_data_to_tx(stream_data_to_tx),
-        .fifo_track(fifo_track),
+        .tx_fifo_track(tx_fifo_track),
         
         .mst_exec_state(tx_mst_exec_state),
         

@@ -1,5 +1,6 @@
-
 `timescale 1 ns / 1 ps
+
+`include "global.vh"
 
 	module image_processing_ip_v1_0_S_AXI_LITE #
 	(
@@ -20,19 +21,21 @@
 	)
 	(
 		// Users to add ports here
-        input wire [line_bits-1:0] write_pointer,
-        input wire [line_bits-1:0] read_pointer,
+        input wire [line_bits-1:0] rx_write_pointer,
+        input wire [line_bits-1:0] tx_read_pointer,
         input wire rx_en,
         input wire tx_en,
 	    input wire [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
 	    output wire [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
-        output reg [fifo_bits-1:0] fifo_track,
+        output reg [fifo_bits-1:0] rx_fifo_track,
+        output reg [fifo_bits-1:0] tx_fifo_track,
         input wire rx_mst_exec_state,        
         input wire [1:0] tx_mst_exec_state,     
         input wire mm2s_tready,
         input wire mm2s_tvalid,
         input wire s2mm_tvalid,
         input wire s2mm_tready,
+		input wire AXIS_ARESETN,
           
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -582,16 +585,16 @@
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	        5'h00   : reg_data_out <= rx_mst_exec_state;
 	        5'h01   : reg_data_out <= tx_mst_exec_state;
-	        5'h02   : reg_data_out <= read_pointer;
-	        5'h03   : reg_data_out <= write_pointer;
-	        5'h04   : reg_data_out <= mm2s_tready;
-	        5'h05   : reg_data_out <= mm2s_tvalid;
-	        5'h06   : reg_data_out <= s2mm_tvalid;
-	        5'h07   : reg_data_out <= s2mm_tready;
-	        5'h08   : reg_data_out <= fifo_track;
-	        5'h09   : reg_data_out <= slv_reg9;
-	        5'h0A   : reg_data_out <= slv_reg10;
-	        5'h0B   : reg_data_out <= slv_reg11;
+	        5'h02   : reg_data_out <= rx_write_pointer;
+	        5'h03   : reg_data_out <= rx_read_pointer;
+	        5'h04   : reg_data_out <= tx_write_pointer;
+	        5'h05   : reg_data_out <= tx_read_pointer;
+	        5'h06   : reg_data_out <= rx_fifo_track;
+	        5'h07   : reg_data_out <= tx_fifo_track;
+	        5'h08   : reg_data_out <= mm2s_tready;
+	        5'h09   : reg_data_out <= mm2s_tvalid;
+	        5'h0A   : reg_data_out <= s2mm_tvalid;
+	        5'h0B   : reg_data_out <= s2mm_tready;
 	        5'h0C   : reg_data_out <= slv_reg12;
 	        5'h0D   : reg_data_out <= slv_reg13;
 	        5'h0E   : reg_data_out <= slv_reg14;
@@ -632,12 +635,20 @@
 
     // Streaming input data is stored in FIFO
     reg [AXIS_TDATA_WIDTH-1:0] rx_fifo [0 : FIFO_SIZE-1];
-    reg [AXIS_TDATA_WIDTH-1:0] stream_to_emily;
-    wire [AXIS_TDATA_WIDTH-1:0] stream_from_emily;
+    reg [AXIS_TDATA_WIDTH-1:0] tx_fifo [0 : FIFO_SIZE-1];
+    reg [AXIS_TDATA_WIDTH-1:0] stream_to_core;
+    wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
+    reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
+    wire core_en;
+    
+    reg [line_bits-1:0] rx_read_pointer; 	                     // FIFO write pointer
+    reg [line_bits-1:0] tx_write_pointer; 	                     // FIFO write pointer
+    
+    wire stream_mode = 1;
 
     always @( posedge S_AXI_ACLK )                  
     begin                                            
-        if(!S_AXI_ARESETN)                            
+        if(!AXIS_ARESETN)                            
         begin                                        
             //stream_data_to_tx <= 1;  
         end                                          
@@ -647,19 +658,24 @@
             begin
                 rx_fifo[rx_write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
             end  
-            if (emily_en)
-            begin
-                stream_to_emily <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
             
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_emily;
+            if (core_en & stream_mode)
+            begin
+                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_core;
             end     
+            
+            else if (!stream_mode)
+            begin  
+                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)][7:0] <= stream_to_core[15:8];       // puts blue into green
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)][15:8] <= stream_to_core[7:0];       // puts green into blue
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)][23:16] <= stream_to_core[23:16];    // keeps red the same
+            end
+            
             if (tx_en) 
             begin                                        
-                stream_to_emily <= tx_fifo[(read_pointer % FIFO_SIZE)];// + 32'b1]; 
-              
-                //stream_data_to_tx[7:0] <= tx_fifo[(read_pointer % FIFO_SIZE)][15:8];     // puts blue into green
-                //stream_data_to_tx[15:8] <= tx_fifo[(read_pointer % FIFO_SIZE)][7:0];     // puts green into blue
-                //stream_data_to_tx[23:16] <= tx_fifo[(read_pointer % FIFO_SIZE)][23:16];  // keeps red the same
+                stream_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)]; 
             end
         end                                          
     end       
@@ -669,28 +685,132 @@
     top stuff(
         .clk(S_AXI_ACLK),
         .reset_n(S_AXI_ARESETN),
-        .en(emily_en),
+        .en(core_en),
         .hsync(1'b0),
         .vsync(1'b0),
         .mode(mode),
-        .data(stream_to_emily), // [`PIXEL_SIZE - 1:0] data,
-        .out(stream_from_emily) // [`PIXEL_SIZE - 1:0] out
+        .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
+        .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
     );    
     
-	assign stream_data_to_tx = { 3{stream_from_emily[15:8]} };    
+    assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
     
+	assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };    
+
+	//assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (rx_write_pointer < FRAME_WIDTH) && (rx_fifo_track < FIFO_SIZE));
+	//assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (tx_read_pointer < FRAME_WIDTH) && (tx_fifo_track > 0));
+    
+    // rx_fifo tracker
     always @( posedge S_AXI_ACLK )                  
     begin                                            
-        if(!S_AXI_ARESETN)                            
-            fifo_track <= 0;
-        else if(~(rx_en ^ tx_en))
-            fifo_track <= fifo_track;            
+        if(!AXIS_ARESETN)                            
+            rx_fifo_track <= 0;
+        else if(~(rx_en ^ core_en))
+            rx_fifo_track <= rx_fifo_track;            
         else if (rx_en)
-            fifo_track <= fifo_track + 1;
-        else if (tx_en)
-            fifo_track <= fifo_track - 1;
-    end      
+            rx_fifo_track <= rx_fifo_track + 1;
+        else if (core_en)
+            rx_fifo_track <= rx_fifo_track - 1;
+    end     
     
+    // tx_fifo tracker
+    always @( posedge S_AXI_ACLK )                  
+    begin                                            
+        if(!AXIS_ARESETN)                            
+            tx_fifo_track <= 0;
+        else if(~(core_en ^ tx_en))
+            tx_fifo_track <= tx_fifo_track;            
+        else if (core_en)
+            tx_fifo_track <= tx_fifo_track + 1;
+        else if (tx_en)
+            tx_fifo_track <= tx_fifo_track - 1;
+    end   
+
+
+	//rx_read_pointer pointer
+	always@(posedge S_AXI_ACLK)                                               
+	begin                                                                            
+        if(!AXIS_ARESETN)                                                            
+	    begin                                                                        
+	      rx_read_pointer <= 0;                                                         
+	      //tx_done <= 1'b0;                                                           
+	    end                                                                          
+        else   
+        begin                                                                        
+            if (rx_read_pointer < FRAME_WIDTH)                                
+            begin                                                                      
+	            if (core_en)                                                               
+	            // read pointer is incremented after every read from the FIFO          
+	            // when FIFO read signal is enabled.                                   
+	            begin                                                                  
+	                rx_read_pointer <= rx_read_pointer + 1;                                    
+	                //tx_done <= 1'b0;                                                     
+	            end                                                                    
+	        end                                                                        
+	        else if (rx_read_pointer >= FRAME_WIDTH)                             
+	        begin                                                                      
+	            // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
+	            // has been out.                                                         
+	            //tx_done <= 1'b1;  
+                rx_read_pointer <= 0;                                                         
+	        end     
+        end                                                                   
+	end     
+
+
+	//tx_write_pointer pointer
+	always@(posedge S_AXI_ACLK)
+    begin
+        if(!AXIS_ARESETN)
+        begin
+            tx_write_pointer <= 0;
+            //writes_done <= 1'b0;
+        end  
+        else
+        begin
+            if (tx_write_pointer < FRAME_WIDTH)
+            begin
+                if (core_en)
+                begin
+                    // write pointer is incremented after every write to the FIFO
+                    // when FIFO write signal is enabled.
+                    tx_write_pointer <= tx_write_pointer + 1;
+                    //writes_done <= 1'b0;
+                end
+            end
+            else if ((tx_write_pointer >= FRAME_WIDTH))// || S_AXIS_TLAST)
+            begin
+                // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data 
+                // has been written to the FIFO which is also marked by S_AXIS_TLAST(kept for optional usage).
+                //writes_done <= 1'b1;
+                tx_write_pointer <= 0;
+            end
+        end  
+    end        
+        
+        
+        
+/*	
+    always @( posedge S_AXIS_ACLK )
+    begin
+        if(!S_AXIS_ARESETN)
+        begin
+            hsync <= 1'b0;
+            write_line <= 0;
+        end  
+        else if((write_pointer == FRAME_WIDTH-1) && (rx_enable))
+        begin
+            hsync <= 1'b1;
+            write_line <= write_line + 1;
+        end  
+        else
+        begin
+            hsync <= 1'b0;
+            write_line <= write_line;
+        end  
+    end
+*/    
+        
 	// User logic ends
 
 	endmodule

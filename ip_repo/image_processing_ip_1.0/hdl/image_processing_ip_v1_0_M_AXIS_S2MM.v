@@ -1,4 +1,3 @@
-
 `timescale 1 ns / 1 ps
 
 	module image_processing_ip_v1_0_M_AXIS_S2MM #
@@ -21,11 +20,10 @@
 	)
 	(
 		// Users to add ports here
-        input wire [line_bits-1:0] write_pointer,
         output reg [line_bits-1:0] read_pointer,
         output wire tx_en,
         input wire  [C_M_AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
-        input wire [fifo_bits-1:0] fifo_track,
+        input wire [fifo_bits-1:0] tx_fifo_track,
         output reg [1:0] mst_exec_state,                                                    
 
 		// User ports ends
@@ -144,7 +142,7 @@
 	//tvalid generation
 	//axis_tvalid is asserted when the control state machine's state is SEND_STREAM and
 	//number of output streaming data is less than the NUMBER_OF_OUTPUT_WORDS.
-	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < FRAME_WIDTH) && (fifo_track > 0));
+	assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (read_pointer < FRAME_WIDTH) && (tx_fifo_track > 0));
 	                                                                                               
 	// AXI tlast generation                                                                        
 	// axis_tlast is asserted number of output streaming data is NUMBER_OF_OUTPUT_WORDS-1          
@@ -202,9 +200,9 @@
                                     
 
 	// Add user logic here
+	
 	assign tx_en = M_AXIS_TREADY && axis_tvalid;   
 	assign M_AXIS_TDATA = stream_data_to_tx;    
-
 	
 	// User logic ends
 
