@@ -701,8 +701,8 @@
         .clk(S_AXI_ACLK),
         .reset_n(S_AXI_ARESETN),
         .en(core_en),
-        .hsync(1'b0),
-        .vsync(1'b0),
+        .x(pixel_col),
+        .y(pixel_row),
         .mode(mode),
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
         .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
