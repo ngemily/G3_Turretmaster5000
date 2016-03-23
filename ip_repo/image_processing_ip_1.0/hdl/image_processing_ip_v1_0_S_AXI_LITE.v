@@ -26,7 +26,7 @@
         input wire rx_en,
         input wire tx_en,
 	    input wire [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
-	    output reg [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+	    output wire [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         output reg [fifo_bits-1:0] rx_fifo_track,
         output reg [fifo_bits-1:0] tx_fifo_track,
         input wire rx_mst_exec_state,        
@@ -638,13 +638,13 @@
     reg [AXIS_TDATA_WIDTH-1:0] tx_fifo [0 : FIFO_SIZE-1];
     reg [AXIS_TDATA_WIDTH-1:0] stream_to_core;
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
+    reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
-    wire [C_S_AXI_DATA_WIDTH-1:0] cntrl_reg = slv_reg12;
-
+    
     reg [line_bits-1:0] rx_read_pointer; 	                     // FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer; 	                     // FIFO write pointer
     
-    wire [1:0] stream_mode = cntrl_reg[1:0];
+    wire stream_mode = 1;
 
     always @( posedge S_AXI_ACLK )                  
     begin                                            
@@ -659,34 +659,23 @@
                 rx_fifo[rx_write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
             end  
             
-            if (core_en & (stream_mode == 2'b10))
-            //begin
-            //    if (core_out_valid)
-                begin
-                    stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
-                    tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_core;
-                end
-       //         else 
-       //         begin
-       //             stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
-       //         end
-       //     end             
-            else if (core_en & (stream_mode == 2'b01))
+            if (core_en & stream_mode)
+            begin
+                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_core;
+            end     
+            
+            else if (!stream_mode)
             begin  
                 stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)][7:0] <= stream_to_core[15:8];       // puts blue into green
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)][15:8] <= stream_to_core[7:0];       // puts green into blue
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)][23:16] <= stream_to_core[23:16];    // keeps red the same
             end
-            else if (core_en & (stream_mode == 2'b00))
-            begin  
-                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_to_core; 
-            end
-                        
+            
             if (tx_en) 
             begin                                        
-                stream_data_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)]; 
+                stream_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)]; 
             end
         end                                          
     end       
@@ -704,8 +693,10 @@
         .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
     );    
     
-    assign core_en = (stream_mode == 1'b1) && (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
+    assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
     
+	assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };    
+
 	//assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (rx_write_pointer < FRAME_WIDTH) && (rx_fifo_track < FIFO_SIZE));
 	//assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (tx_read_pointer < FRAME_WIDTH) && (tx_fifo_track > 0));
     
@@ -727,9 +718,9 @@
     begin                                            
         if(!AXIS_ARESETN)                            
             tx_fifo_track <= 0;
-        else if(~(core_en ^ tx_en))  // (~((core_en & core_out_valid) ^ tx_en))
+        else if(~(core_en ^ tx_en))
             tx_fifo_track <= tx_fifo_track;            
-        else if (core_en)// & core_out_valid)
+        else if (core_en)
             tx_fifo_track <= tx_fifo_track + 1;
         else if (tx_en)
             tx_fifo_track <= tx_fifo_track - 1;
@@ -796,59 +787,26 @@
             end
         end  
     end        
-   
-   
-   // PROBLEM: on vsync, core_out_valid goes low, but there are still three rows inside of the core
-  
-    // determine when core output is valid based on latency 
-    /*
-    always@(posedge S_AXI_ACLK)
-    begin
-        if(!AXIS_ARESETN | vsync)
-        begin
-            latency_counter <= 0;
-            core_out_valid <= 0;
-        end  
-        else
-        begin
-            if (latency_counter < CORE_LATENCY)
-            begin
-                latency_counter <= latency_counter + 1;
-                core_out_valid <= 0;
-            end
-            else if (latency_counter >= CORE_LATENCY)
-            begin
-                core_out_valid <= 1;
-            end
-        end  
-    end
-   */
-                 
+        
+        
+        
 /*	
     always @( posedge S_AXIS_ACLK )
     begin
         if(!S_AXIS_ARESETN)
         begin
             hsync <= 1'b0;
-            row_count <= 0;
-            col_count <= 0;
+            write_line <= 0;
         end  
-        else 
+        else if((write_pointer == FRAME_WIDTH-1) && (rx_enable))
         begin
-            if ((row_count < FRAME_HEIGHT) & (col_count < FRAME_WIDTH) 
-            begin
-                col_count <= col_count + 1;
-            
-            else if(tlast == 1'b1)
-            begin
-                hsync <= 1'b1;
-                row_count <= row_count + 1;
-            end  
-            else
-            begin
-                hsync <= 1'b0;
-                row_count <= row_count;
-            end
+            hsync <= 1'b1;
+            write_line <= write_line + 1;
+        end  
+        else
+        begin
+            hsync <= 1'b0;
+            write_line <= write_line;
         end  
     end
 */    
