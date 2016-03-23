@@ -18,7 +18,7 @@
 #define IMAGE_PROC_BASE_ADDR (XPAR_IMAGE_PROCESSING_IP_0_S_AXI_LITE_BASEADDR)
 
 static XAxiVdma *vdmaPtr;
-volatile TargetingIPStatus *targetingIp;
+volatile TargetingIPStatus *targetingIp = (TargetingIPStatus *)IMAGE_PROC_BASE_ADDR;
 
 XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
     int status = XST_SUCCESS;
@@ -53,7 +53,7 @@ XStatus targeting_begin_transfer(XAxiVdma *dmaPtr) {
 
 TargetingState get_targeting_state(void) {
 	TargetingState state;
-	while (!targetingIp->dataValid);
+	//while (!targetingIp->dataValid);
 	state.laser.x = targetingIp->laserLocation.x;
 	state.laser.y = targetingIp->laserLocation.y;
 	state.target.x = 0; // TODO
@@ -79,9 +79,15 @@ void print_ip_info(void) {
     xil_printf("MM2S_Valid   = %08x\n\r", ipStatus->MM2S_valid);
     xil_printf("S2MM_Valid   = %08x\n\r", ipStatus->S2MM_valid);
     xil_printf("S2MM_Ready   = %08x\n\r", ipStatus->S2MM_ready);
-    xil_printf("control   = %08x\n\r", ipStatus->control);
+    xil_printf("reserved     = %08x\n\r", ipStatus->reserved);
+    xil_printf("threshold    = %08x\n\r", ipStatus->threshold);
+    xil_printf("mode         = %08x\n\r", ipStatus->mode);
+    xil_printf("reset        = %08x\n\r", ipStatus->reset);
 }
 
 void SetOutputMode(TargettingControlMode mode) {
-	targetingIp->control = mode;
+	targetingIp->mode = mode;
+}
+void SetThresholdValue(int threshold) {
+	targetingIp->threshold = threshold;
 }

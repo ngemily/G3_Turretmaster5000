@@ -363,8 +363,33 @@ static void loopIp(void) {
 	}
 }
 
-static void SetColourPassthroughMode(void) {
+static void SetPassthroughMode(void) {
+	SetOutputMode(0);
+}
+static void SetGrayscaleMode(void) {
 	SetOutputMode(1);
+}
+static void SetSobelMode(void) {
+	SetOutputMode(2);
+}
+static void SetThresholdMode(void) {
+	SetOutputMode(3);
+}
+static void SetLabelMode(void) {
+	SetOutputMode(4);
+}
+static void SetColourMode(void) {
+	SetOutputMode(5);
+}
+
+static void SetLowThreshold(void) {
+	SetThresholdValue(1);
+}
+static void SetMediumThreshold(void) {
+	SetThresholdValue(50);
+}
+static void SetHighThreshold(void) {
+	SetThresholdValue(250);
 }
 
 /*****************************************************************************/
@@ -453,7 +478,16 @@ int main(void)
 	register_uart_response("720p",        r720p);
 	register_uart_response("loop",        loopIp);
 
-	register_uart_response("colour",        SetColourPassthroughMode);
+	register_uart_response("pass",        SetPassthroughMode);
+	register_uart_response("gray",        SetGrayscaleMode);
+	register_uart_response("sobel",        SetSobelMode);
+	register_uart_response("thresh",        SetThresholdMode);
+	register_uart_response("label",        SetLabelMode);
+	register_uart_response("colour",        SetColourMode);
+
+	register_uart_response("low",        SetLowThreshold);
+	register_uart_response("med",        SetMediumThreshold);
+	register_uart_response("high",        SetHighThreshold);
 
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
