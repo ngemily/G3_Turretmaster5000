@@ -10,6 +10,8 @@ find . -mindepth 1 -type d -exec rm -rf {} +
 # Remove any other files than:
 find . -type f ! -name 'cleanup.sh' \
                ! -name 'cleanup.cmd' \
+               ! -name 'compile_project.tcl' \
                ! -name 'create_project.tcl' \
+               ! -name 'launch_sdk.tcl' \
                ! -name '.gitignore' \
                -exec rm -rf {} +

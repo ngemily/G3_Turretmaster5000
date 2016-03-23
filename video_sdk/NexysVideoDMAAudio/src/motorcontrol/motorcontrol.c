@@ -45,8 +45,8 @@
 #define SERVO_ANGLE_MAX (72)
 #define SERVO_ANGLE_MIN (-72)
 
-int CurrentPanAngle;
-int CurrentTiltAngle;
+static int CurrentPanAngle;
+static int CurrentTiltAngle;
 
 /******************************************************************************
  * Static Function Declarations
@@ -58,6 +58,8 @@ static u32 AngleToDuty(int angle);
  *****************************************************************************/
 void InitMotorBoard() {
 	DRIVER_BOARD_IP_mWriteReg(DRIVER_BOARD_BASE_ADDR, CTRL_REG_OFFSET, 0);
+	CurrentPanAngle = 0;
+	CurrentTiltAngle = 0;
 }
 
 
@@ -105,18 +107,8 @@ void SetPanAngle(int angle) {
 	CurrentPanAngle = angle;
 }
 
+
 void PanLeft(int angle) {
-	int newAngle = CurrentPanAngle - angle;
-
-	if (newAngle < SERVO_ANGLE_MAX) {
-		newAngle = SERVO_ANGLE_MAX;
-	}
-
-	SetPanAngle(newAngle);
-}
-
-
-void PanRight(int angle) {
 	int newAngle = CurrentPanAngle + angle;
 
 	if (newAngle > SERVO_ANGLE_MAX) {
@@ -125,6 +117,18 @@ void PanRight(int angle) {
 
 	SetPanAngle(newAngle);
 }
+
+
+void PanRight(int angle) {
+	int newAngle = CurrentPanAngle - angle;
+
+	if (newAngle < SERVO_ANGLE_MIN) {
+		newAngle = SERVO_ANGLE_MIN;
+	}
+
+	SetPanAngle(newAngle);
+}
+
 
 void EnableTiltServo() {
 	u32 CtrlReg = DRIVER_BOARD_IP_mReadReg(DRIVER_BOARD_BASE_ADDR, CTRL_REG_OFFSET);
@@ -170,8 +174,8 @@ void TiltUp(int angle){
 void TiltDown(int angle) {
 	int newAngle = CurrentTiltAngle - angle;
 
-	if (newAngle < SERVO_ANGLE_MAX) {
-		newAngle = SERVO_ANGLE_MAX;
+	if (newAngle < SERVO_ANGLE_MIN) {
+		newAngle = SERVO_ANGLE_MIN;
 	}
 
 	SetTiltAngle(newAngle);
