@@ -265,7 +265,7 @@
 	      slv_reg9 <= 0;
 	      slv_reg10 <= 0;
 	      slv_reg11 <= 0;
-	      slv_reg12 <= 0;
+	      slv_reg12 <= {8'd0, 8'd0, 8'd50, 8'd1};
 	      slv_reg13 <= 0;
 	      slv_reg14 <= 0;
 	      slv_reg15 <= 0;
@@ -595,7 +595,7 @@
 	        5'h09   : reg_data_out <= mm2s_tvalid;
 	        5'h0A   : reg_data_out <= s2mm_tvalid;
 	        5'h0B   : reg_data_out <= s2mm_tready;
-	        5'h0C   : reg_data_out <= slv_reg12;
+	        5'h0C   : reg_data_out <= slv_reg12;    // input: ctrl reg
 	        5'h0D   : reg_data_out <= slv_reg13;
 	        5'h0E   : reg_data_out <= slv_reg14;
 	        5'h0F   : reg_data_out <= slv_reg15;
@@ -640,6 +640,8 @@
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
     reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
+    wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
+
     
     reg [line_bits-1:0] rx_read_pointer; 	                     // FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer; 	                     // FIFO write pointer
@@ -680,7 +682,12 @@
         end                                          
     end       
 
-    wire [`WORD_SIZE - 1:0] mode = (1 << `OUT);
+    // ctrl register layout: (by byte)
+    // +----------+----------+-----------+------+
+    // | reserved | reserved | threshold | mode |
+    // +----------+----------+-----------+------+
+    wire [`WORD_SIZE - 1:0] threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] mode      = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
     
     top stuff(
         .clk(S_AXI_ACLK),
