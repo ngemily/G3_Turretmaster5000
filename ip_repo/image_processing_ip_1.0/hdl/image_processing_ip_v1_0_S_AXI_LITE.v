@@ -646,15 +646,13 @@
     reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
-    assign AXIS_FRAME_RESETN = !slv_reg13;
     reg [31:0] pixel_row;
     reg [31:0] pixel_col;
 
-
     reg [line_bits-1:0] rx_read_pointer; 	                     // FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer; 	                     // FIFO write pointer
-
-    wire stream_mode = 1;
+    
+    assign AXIS_FRAME_RESETN = !slv_reg13;
 
     always @( posedge S_AXI_ACLK )
     begin
@@ -669,18 +667,10 @@
                 rx_fifo[rx_write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
             end
 
-            if (core_en & stream_mode)
+            if (core_en)
             begin
                 stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)];
                 tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_core;
-            end
-
-            else if (!stream_mode)
-            begin
-                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)];
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)][7:0] <= stream_to_core[15:8];       // puts blue into green
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)][15:8] <= stream_to_core[7:0];       // puts green into blue
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)][23:16] <= stream_to_core[23:16];    // keeps red the same
             end
 
             if (tx_en)
@@ -697,14 +687,15 @@
     wire [`WORD_SIZE - 1:0] threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
     wire [`WORD_SIZE - 1:0] mode      = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
-    top stuff(
+    top core(
         .clk(S_AXI_ACLK),
         .reset_n(S_AXI_ARESETN),
         .en(core_en),
         .x(pixel_col),
         .y(pixel_row),
-        .mode(mode),
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
+        .mode(mode),
+        .threshold(threshold),
         .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
     );
 
@@ -805,7 +796,7 @@
 
 
     // generate x-y co-ordinates of current pixel
-    always @( posedge S_AXIS_ACLK )
+    always @( posedge S_AXI_ACLK )
     begin
         if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
         begin
