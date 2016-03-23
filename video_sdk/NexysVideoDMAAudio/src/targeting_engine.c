@@ -15,8 +15,6 @@
 #include "targeting_engine.h"
 #include "demo.h"
 
-#define IMAGE_PROC_BASE_ADDR (XPAR_IMAGE_PROCESSING_IP_0_S_AXI_LITE_BASEADDR)
-
 static XAxiVdma *vdmaPtr;
 volatile TargetingIPStatus *targetingIp;
 
@@ -65,23 +63,13 @@ void print_ip_info(void) {
     xil_printf("VDMA Info:\n\r");
     XAxiVdma_DmaRegisterDump(vdmaPtr, XAXIVDMA_READ);
     XAxiVdma_DmaRegisterDump(vdmaPtr, XAXIVDMA_WRITE);
-    volatile TargetingIPStatus *ipStatus = (TargetingIPStatus *) IMAGE_PROC_BASE_ADDR;
-
+    volatile TargetingIPStatus *ipStatus = (TargetingIPStatus *) 0x44A70000;
     xil_printf("rx_fsm_state = %08x\n\r", ipStatus->rx_fsm_state);
     xil_printf("tx_fsm_state = %08x\n\r", ipStatus->tx_fsm_state);
-    xil_printf("rx_write_ptr = %08x\n\r", ipStatus->rx_write_ptr);
-    xil_printf("rx_read_ptr  = %08x\n\r", ipStatus->rx_read_ptr);
-    xil_printf("tx_write_ptr = %08x\n\r", ipStatus->tx_write_ptr);
-    xil_printf("tx_read_ptr  = %08x\n\r", ipStatus->tx_read_ptr);
-    xil_printf("rx_fifo_tracker = %08x\n\r", ipStatus->rx_fifo_tracker);
-    xil_printf("tx_fifo_tracker  = %08x\n\r", ipStatus->tx_fifo_tracker);
+    xil_printf("Read_Ptr     = %08x\n\r", ipStatus->read_ptr);
+    xil_printf("Write_Ptr    = %08x\n\r", ipStatus->write_ptr);
     xil_printf("MM2S_Ready   = %08x\n\r", ipStatus->MM2S_ready);
     xil_printf("MM2S_Valid   = %08x\n\r", ipStatus->MM2S_valid);
     xil_printf("S2MM_Valid   = %08x\n\r", ipStatus->S2MM_valid);
     xil_printf("S2MM_Ready   = %08x\n\r", ipStatus->S2MM_ready);
-    xil_printf("control   = %08x\n\r", ipStatus->control);
-}
-
-void SetOutputMode(TargettingControlMode mode) {
-	targetingIp->control = mode;
 }
