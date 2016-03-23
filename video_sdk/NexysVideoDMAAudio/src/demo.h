@@ -63,6 +63,9 @@
 #define PORTAL_GUN_PATH "portal.raw"
 #define TARGET_PATH "target.raw"
 
+#define FRAME_SIZE_BYTES (3 * 1280 * 720)
+#define IMAGE_FILE_PATH "image.bin"
+
 
 typedef enum {
 	SOUND_ID_STILL_ALIVE = 0,

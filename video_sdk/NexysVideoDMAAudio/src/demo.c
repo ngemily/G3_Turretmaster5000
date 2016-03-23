@@ -142,6 +142,8 @@ static void EnterAutomaticMainLoop(void);
 static void EnterLaserTest(void);
 static void EnterMotorTest(void);
 
+static void SendImageToIP(void);
+
 /************************** Variable Definitions *****************************/
 /*
  * Device instance definitions
@@ -449,6 +451,8 @@ int main(void)
 	register_uart_response("720p",        r720p);
 	register_uart_response("loop",        loopIp);
 
+	register_uart_response("lemon",       SendImageToIP);
+
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
 	xil_printf(PROMPT_STRING);
@@ -723,4 +727,36 @@ static void EnterMotorTest(void) {
 	sLoopSelect = MOTOR_TEST;
 }
 
+
+static void SendImageToIP(void) {
+	FATFS FatFs;
+	FIL FHandle;
+	UINT numBytesRead;
+	u32 *buff = FRAMES_BASE_ADDR;
+	FRESULT result;
+
+	video_set_input_enabled(0);
+
+	if (f_mount(&FatFs, "", 0) != FR_OK) {
+	   	xil_printf("Failed to mount filesystem.\n\r");
+	   	return;
+	}
+
+	if ((result = f_open(&FHandle, IMAGE_FILE_PATH, FA_READ)) != FR_OK) {
+	   	xil_printf("Failed to f_open %s: %d .\n\r", IMAGE_FILE_PATH, result);
+		return;
+	}
+
+	if ((result = f_read(&FHandle, (void *) buff, FRAME_SIZE_BYTES, &numBytesRead)) != FR_OK) {
+	   	xil_printf("Failed to f_read %s: %d.\n\r", IMAGE_FILE_PATH, result);
+		return;
+	}
+
+	if (numBytesRead < FRAME_SIZE_BYTES) {
+		xil_printf("Incorrect number of bytes read from image: %d\r\n", numBytesRead);
+		return;
+	}
+
+	targeting_begin_transfer(&sAxiTargetingDma);
+}
 
