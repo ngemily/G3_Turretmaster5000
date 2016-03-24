@@ -144,6 +144,8 @@ static void EnterMotorTest(void);
 
 static void SendImageToIP(void);
 
+static void TestArgs(void);
+
 /************************** Variable Definitions *****************************/
 /*
  * Device instance definitions
@@ -492,6 +494,8 @@ int main(void)
 	register_uart_response("med",        SetMediumThreshold);
 	register_uart_response("high",        SetHighThreshold);
 
+	register_uart_response("test_args",   TestArgs);
+
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
 	xil_printf(PROMPT_STRING);
@@ -797,5 +801,20 @@ static void SendImageToIP(void) {
 	}
 
 	targeting_begin_transfer(&sAxiTargetingDma);
+}
+
+static void TestArgs(void) {
+	char buf[50];
+	int result;
+	consume_uart_arg("derp", buf, 50);
+
+	xil_printf("You typed out: %s\r\n", buf);
+
+	consume_uart_arg("num", buf, 50);
+	if (get_int_from_string(buf, &result)) {
+		xil_printf("Got number: %d\r\n", result);
+	} else {
+		xil_printf("Not a valid integer: %s\r\n", buf);
+	}
 }
 
