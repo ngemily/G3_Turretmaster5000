@@ -20,6 +20,8 @@ static XAxiVdma_DmaSetup targetingInputSetup;
 static XAxiVdma_DmaSetup targetingOutputSetup;
 static u8 *baseFrameBufferAddress;
 
+volatile static int outputComplete = 1;
+
 /******************************************************************************
  *
  *****************************************************************************/
@@ -34,12 +36,15 @@ static void vdmaInputError(void *CallBackRef, u32 InterruptTypes)
 static void vdmaOutputComplete(void *CallBackRef, u32 InterruptTypes)
 {
     xil_printf("vdmaOutputComplete\n\r");
-	video_set_input_enabled(1);
-	video_set_output_enabled(1);
+    outputComplete = 1;
 }
 static void vdmaOutputError(void *CallBackRef, u32 InterruptTypes)
 {
     xil_printf("vdmaOutputError!\n\r");
+}
+
+int isVdmaComplete(void) {
+    return outputComplete;
 }
 
 /******************************************************************************
@@ -148,6 +153,8 @@ XStatus fnSetupTargetingDmaInput(XAxiVdma *AxiVdma, const VideoMode *videoMode, 
     int Status;
     u32 stride = videoMode->width * 3;
 
+    outputComplete = 0;
+
     /*
      * Configure the VDMA to access a frame with the same dimensions as the
      * current mode
@@ -186,6 +193,8 @@ XStatus fnSetupTargetingDmaInput(XAxiVdma *AxiVdma, const VideoMode *videoMode, 
 XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdxOut)
 {
     int Status;
+
+    outputComplete = 0;
 
     static XAxiVdma_FrameCounter frameCounterCfg;
     frameCounterCfg.ReadDelayTimerCount  = 0;

@@ -11,14 +11,14 @@
 #define MAX_NUM_TARGETING_OBJECTS 4
 
 typedef struct {
-	u16 x;
-	u16 y;
+    u16 y;
+    u16 x;
 } TargetLocation;
 
 typedef struct {
-	u32 valid;
-	TargetLocation location;
-	u32 moments[7];
+    u32 valid;
+    TargetLocation location;
+    u32 moments[7];
 } TargetObjectData;
 
 typedef struct {
@@ -39,8 +39,6 @@ typedef struct {
     u8 red_threshold;
     u8 reserved;
     u32 reset;
-    u16 laser_y;
-    u16 laser_x;
     TargetLocation laserLocation;
     TargetObjectData objects[MAX_NUM_TARGETING_OBJECTS];
 } TargetingIPStatus;
