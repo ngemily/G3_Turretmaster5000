@@ -10,7 +10,8 @@ module lazer_lazer (
     input wire [31:0] x,
     input wire [31:0] y,
     input wire [`PIXEL_SIZE - 1:0] data,
-    output wire [31:0] laser_xy
+    output wire [31:0] laser_xy,
+    output wire [`PIXEL_SIZE - 1:0] debug
     );
     
     wire diff;
@@ -22,7 +23,12 @@ module lazer_lazer (
     reg red_valid_flopped;
     reg [2:0] state;  
 
-    r_minus_gb_threshold P0 (.pixel(data), .threshold(red_threshold), .q(diff));
+    r_minus_gb_threshold P0 (
+        .pixel(data),
+        .threshold(red_threshold),
+        .q(diff),
+        .debug(debug)
+    );
 
     assign laser_xy = {laser_x, laser_y};
     assign red_valid_edge = red_valid && ~red_valid_flopped;
@@ -105,7 +111,8 @@ endmodule
 module r_minus_gb_threshold (
     input [23:0] pixel,
     input [7:0] threshold,
-    output q
+    output q,
+    output [23:0] debug
     );
     wire [15:0] G = pixel[7:0];
     wire [15:0] B = pixel[15:8];
@@ -117,6 +124,8 @@ module r_minus_gb_threshold (
     assign d = (R > GB_SUM) ? (R - GB_SUM) : 0;
     
     assign q = (d > threshold) ? 1 : 0;
+
+    assign debug = {8'b0, d};
 endmodule
     
     

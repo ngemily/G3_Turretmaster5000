@@ -1,6 +1,7 @@
 `timescale 1 ns / 1 ps
 
 `include "global.vh"
+`define LASER 6
 
 	module image_processing_ip_v1_0_S_AXI_LITE #
 	(
@@ -642,6 +643,8 @@
     reg [AXIS_TDATA_WIDTH-1:0] tx_fifo [0 : FIFO_SIZE-1];
     reg [AXIS_TDATA_WIDTH-1:0] stream_to_core;
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
+    wire [AXIS_TDATA_WIDTH-1:0] stream_from_laser;
+    wire [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator;
     //reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
@@ -654,6 +657,7 @@
     
     assign AXIS_FRAME_RESETN = !slv_reg13;
     assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
+    assign stream_from_core = (mode == `LASER) ? stream_from_laser : stream_from_detectinator;
 
     always @( posedge S_AXI_ACLK )
     begin
@@ -698,7 +702,7 @@
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
         .mode(mode),
         .threshold(threshold),
-        .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
+        .out(stream_from_detectinator) // [`PIXEL_SIZE - 1:0] out
     );
     
     lazer_lazer get_lazed(
@@ -709,7 +713,8 @@
         .x(pixel_col),
         .y(pixel_row),
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
-        .laser_xy(laser_xy)
+        .laser_xy(laser_xy),
+        .debug(stream_from_laser)
     );
 
 	//assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };
