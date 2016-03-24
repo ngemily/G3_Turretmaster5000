@@ -26,7 +26,7 @@
         input wire rx_en,
         input wire tx_en,
 	    input wire [AXIS_TDATA_WIDTH-1:0] stream_data_from_rx,
-	    output wire [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
+	    output reg [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         output reg [fifo_bits-1:0] rx_fifo_track,
         output reg [fifo_bits-1:0] tx_fifo_track,
         input wire rx_mst_exec_state,
@@ -600,9 +600,9 @@
 	        5'h09   : reg_data_out <= mm2s_tvalid;
 	        5'h0A   : reg_data_out <= s2mm_tvalid;
 	        5'h0B   : reg_data_out <= s2mm_tready;
-	        5'h0C   : reg_data_out <= slv_reg12;    // input: ctrl reg
-	        5'h0D   : reg_data_out <= slv_reg13;
-	        5'h0E   : reg_data_out <= slv_reg14;
+	        5'h0C   : reg_data_out <= slv_reg12;   // input: ctrl reg
+	        5'h0D   : reg_data_out <= slv_reg13;   // input: frame resetn
+	        5'h0E   : reg_data_out <= laser_xy; 
 	        5'h0F   : reg_data_out <= slv_reg15;
 	        5'h10   : reg_data_out <= slv_reg16;
 	        5'h11   : reg_data_out <= slv_reg17;
@@ -637,22 +637,23 @@
 
 	// Add user logic here
 
-
     // Streaming input data is stored in FIFO
     reg [AXIS_TDATA_WIDTH-1:0] rx_fifo [0 : FIFO_SIZE-1];
     reg [AXIS_TDATA_WIDTH-1:0] tx_fifo [0 : FIFO_SIZE-1];
     reg [AXIS_TDATA_WIDTH-1:0] stream_to_core;
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
-    reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
+    //reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
     reg [31:0] pixel_row;
     reg [31:0] pixel_col;
+    wire [31:0] laser_xy;
 
-    reg [line_bits-1:0] rx_read_pointer; 	                     // FIFO write pointer
-    reg [line_bits-1:0] tx_write_pointer; 	                     // FIFO write pointer
+    reg [line_bits-1:0] rx_read_pointer; 	                     // rx FIFO write pointer
+    reg [line_bits-1:0] tx_write_pointer; 	                     // tx FIFO write pointer
     
     assign AXIS_FRAME_RESETN = !slv_reg13;
+    assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
 
     always @( posedge S_AXI_ACLK )
     begin
@@ -675,7 +676,7 @@
 
             if (tx_en)
             begin
-                stream_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)];
+                stream_data_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)];
             end
         end
     end
@@ -684,6 +685,7 @@
     // +----------+----------+-----------+------+
     // | reserved | reserved | threshold | mode |
     // +----------+----------+-----------+------+
+    wire [`WORD_SIZE - 1:0] red_threshold = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
     wire [`WORD_SIZE - 1:0] threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
     wire [`WORD_SIZE - 1:0] mode      = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
@@ -698,10 +700,19 @@
         .threshold(threshold),
         .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
     );
+    
+    lazer_lazer get_lazed(
+        .clk(S_AXI_ACLK),
+        .reset_n(AXIS_FRAME_RESETN),
+        .en(core_en),
+        .red_threshold(red_threshold),
+        .x(pixel_col),
+        .y(pixel_row),
+        .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
+        .laser_xy(laser_xy)
+    );
 
-    assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
-
-	assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };
+	//assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };
 
 	//assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (rx_write_pointer < FRAME_WIDTH) && (rx_fifo_track < FIFO_SIZE));
 	//assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (tx_read_pointer < FRAME_WIDTH) && (tx_fifo_track > 0));
