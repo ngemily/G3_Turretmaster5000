@@ -267,7 +267,7 @@
 	      slv_reg9 <= 0;
 	      slv_reg10 <= 0;
 	      slv_reg11 <= 0;
-	      slv_reg12 <= {8'd0, 8'd0, 8'd50, 8'd1};
+	      slv_reg12 <= {8'd1, 8'd0, 8'd50, 8'd1};
 	      slv_reg13 <= 0;
 	      slv_reg14 <= 0;
 	      slv_reg15 <= 0;
@@ -604,7 +604,7 @@
 	        5'h0C   : reg_data_out <= slv_reg12;   // input: ctrl reg
 	        5'h0D   : reg_data_out <= slv_reg13;   // input: frame resetn
 	        5'h0E   : reg_data_out <= laser_xy; 
-	        5'h0F   : reg_data_out <= slv_reg15;
+	        5'h0F   : reg_data_out <= {obj_x, obj_y};
 	        5'h10   : reg_data_out <= slv_reg16;
 	        5'h11   : reg_data_out <= slv_reg17;
 	        5'h12   : reg_data_out <= slv_reg18;
@@ -651,10 +651,21 @@
     reg [31:0] pixel_row;
     reg [31:0] pixel_col;
     wire [31:0] laser_xy;
+    wire [15:0] obj_x;
+    wire [15:0] obj_y;
 
     reg [line_bits-1:0] rx_read_pointer; 	                     // rx FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer; 	                     // tx FIFO write pointer
     
+    // ctrl register layout: (by byte)
+    // +--------+---------------+-----------+------+
+    // | obj_id | red_threshold | threshold | mode |
+    // +--------+---------------+-----------+------+
+    wire [`WORD_SIZE - 1:0] obj_id        = ctrl[`WORD_SIZE * 4 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] red_threshold = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] threshold     = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] mode          = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
+
     assign AXIS_FRAME_RESETN = !slv_reg13;
     assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
     assign stream_from_core = (mode == `LASER) ? stream_from_laser : stream_from_detectinator;
@@ -685,14 +696,6 @@
         end
     end
 
-    // ctrl register layout: (by byte)
-    // +----------+----------+-----------+------+
-    // | reserved | reserved | threshold | mode |
-    // +----------+----------+-----------+------+
-    wire [`WORD_SIZE - 1:0] red_threshold = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] mode      = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
-
     top core(
         .clk(S_AXI_ACLK),
         .reset_n(S_AXI_ARESETN),
@@ -702,7 +705,10 @@
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
         .mode(mode),
         .threshold(threshold),
-        .out(stream_from_detectinator) // [`PIXEL_SIZE - 1:0] out
+        .obj_id(obj_id),
+        .out(stream_from_detectinator), // [`PIXEL_SIZE - 1:0] out
+        .obj_x(obj_x),
+        .obj_y(obj_y)
     );
     
     lazer_lazer get_lazed(
