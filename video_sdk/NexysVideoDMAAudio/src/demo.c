@@ -365,6 +365,35 @@ static void loopIp(void) {
 	}
 }
 
+static void SetPassthroughMode(void) {
+	SetOutputMode(0);
+}
+static void SetGrayscaleMode(void) {
+	SetOutputMode(1);
+}
+static void SetSobelMode(void) {
+	SetOutputMode(2);
+}
+static void SetThresholdMode(void) {
+	SetOutputMode(3);
+}
+static void SetLabelMode(void) {
+	SetOutputMode(4);
+}
+static void SetColourMode(void) {
+	SetOutputMode(5);
+}
+
+static void SetLowThreshold(void) {
+	SetThresholdValue(1);
+}
+static void SetMediumThreshold(void) {
+	SetThresholdValue(50);
+}
+static void SetHighThreshold(void) {
+	SetThresholdValue(250);
+}
+
 /*****************************************************************************/
 /**
 *
@@ -452,6 +481,16 @@ int main(void)
 	register_uart_response("loop",        loopIp);
 
 	register_uart_response("lemon",       SendImageToIP);
+	register_uart_response("pass",        SetPassthroughMode);
+	register_uart_response("gray",        SetGrayscaleMode);
+	register_uart_response("sobel",        SetSobelMode);
+	register_uart_response("thresh",        SetThresholdMode);
+	register_uart_response("label",        SetLabelMode);
+	register_uart_response("colour",        SetColourMode);
+
+	register_uart_response("low",        SetLowThreshold);
+	register_uart_response("med",        SetMediumThreshold);
+	register_uart_response("high",        SetHighThreshold);
 
 	xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
@@ -732,23 +771,23 @@ static void SendImageToIP(void) {
 	FATFS FatFs;
 	FIL FHandle;
 	UINT numBytesRead;
-	u32 *buff = FRAMES_BASE_ADDR;
+	u32 *buff = (u32 *) FRAMES_BASE_ADDR;
 	FRESULT result;
 
 	video_set_input_enabled(0);
 
 	if (f_mount(&FatFs, "", 0) != FR_OK) {
-	   	xil_printf("Failed to mount filesystem.\n\r");
-	   	return;
+		xil_printf("Failed to mount filesystem.\n\r");
+		return;
 	}
 
 	if ((result = f_open(&FHandle, IMAGE_FILE_PATH, FA_READ)) != FR_OK) {
-	   	xil_printf("Failed to f_open %s: %d .\n\r", IMAGE_FILE_PATH, result);
+		xil_printf("Failed to f_open %s: %d .\n\r", IMAGE_FILE_PATH, result);
 		return;
 	}
 
 	if ((result = f_read(&FHandle, (void *) buff, FRAME_SIZE_BYTES, &numBytesRead)) != FR_OK) {
-	   	xil_printf("Failed to f_read %s: %d.\n\r", IMAGE_FILE_PATH, result);
+		xil_printf("Failed to f_read %s: %d.\n\r", IMAGE_FILE_PATH, result);
 		return;
 	}
 

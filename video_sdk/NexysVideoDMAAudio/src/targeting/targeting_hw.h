@@ -23,16 +23,31 @@ typedef struct {
 
 typedef struct {
     u32 rx_fsm_state;
-    u32 tx_fsm_state;;
-    u32 read_ptr;
-    u32 write_ptr;
+    u32 tx_fsm_state;
+    u32 rx_write_ptr;
+    u32 rx_read_ptr;
+    u32 tx_write_ptr;
+    u32 tx_read_ptr;
+    u32 rx_fifo_tracker;
+    u32 tx_fifo_tracker;
     u32 MM2S_ready;
     u32 MM2S_valid;
     u32 S2MM_valid;
     u32 S2MM_ready;
-    u32 dataValid;
+    u8 mode;
+    u8 threshold;
+    u16 reserved;
+    u32 reset;
     TargetLocation laserLocation;
     TargetObjectData objects[MAX_NUM_TARGETING_OBJECTS];
 } TargetingIPStatus;
+
+
+typedef enum {
+	SOBEL_MODE = 0,
+	COLOUR_TRANSFORM,
+	PASSTHROUGH
+} TargettingControlMode;
+
 
 #endif /* TARGETING_HW_H_ */

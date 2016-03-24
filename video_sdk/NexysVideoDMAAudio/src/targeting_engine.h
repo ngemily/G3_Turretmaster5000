@@ -10,6 +10,7 @@
 
 #include <xstatus.h>
 #include <xaxivdma.h>
+#include "targeting/targeting_hw.h"
 
 typedef struct {
 	u16 x;
@@ -25,5 +26,7 @@ XStatus        initialize_targeting(XAxiVdma *targetingDmaPtr);
 XStatus        targeting_begin_transfer(XAxiVdma *dmaPtr);
 void           print_ip_info(void);
 TargetingState get_targeting_state(void);
+void 		   SetOutputMode(TargettingControlMode mode);
+void           SetThresholdValue(int threshold);
 
 #endif /* TARGETING_ENGINE_H_ */

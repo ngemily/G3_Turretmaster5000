@@ -93,6 +93,7 @@
     wire  [fifo_bits-1:0] tx_fifo_track;
     wire  rx_mst_exec_state;
     wire  [1:0] tx_mst_exec_state;        
+    wire AXIS_FRAME_RESETN;
 
     	
 // Instantiation of Axi Bus Interface S_AXI_LITE
@@ -120,6 +121,7 @@
         .rx_mst_exec_state(rx_mst_exec_state),
         .tx_mst_exec_state(tx_mst_exec_state),
         .AXIS_ARESETN(s_axis_mm2s_aresetn),
+        .AXIS_FRAME_RESETN(AXIS_FRAME_RESETN),
         
         .mm2s_tready(s_axis_mm2s_tready),
         .mm2s_tvalid(s_axis_mm2s_tvalid),
@@ -166,6 +168,7 @@
         .stream_data_from_rx(stream_data_from_rx),
         .mst_exec_state(rx_mst_exec_state),
         .rx_fifo_track(rx_fifo_track),
+        .AXIS_FRAME_RESETN(AXIS_FRAME_RESETN),
 
 		.S_AXIS_ACLK(s_axis_mm2s_aclk),
 		.S_AXIS_ARESETN(s_axis_mm2s_aresetn),
@@ -193,8 +196,8 @@
         .tx_en(tx_en),
         .stream_data_to_tx(stream_data_to_tx),
         .tx_fifo_track(tx_fifo_track),
-        
         .mst_exec_state(tx_mst_exec_state),
+        .AXIS_FRAME_RESETN(AXIS_FRAME_RESETN),
         
 		.M_AXIS_ACLK(m_axis_s2mm_aclk),
 		.M_AXIS_ARESETN(m_axis_s2mm_aresetn),

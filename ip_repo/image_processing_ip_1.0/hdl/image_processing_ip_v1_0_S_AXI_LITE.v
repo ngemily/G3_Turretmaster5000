@@ -29,14 +29,15 @@
 	    output wire [AXIS_TDATA_WIDTH-1:0] stream_data_to_tx,
         output reg [fifo_bits-1:0] rx_fifo_track,
         output reg [fifo_bits-1:0] tx_fifo_track,
-        input wire rx_mst_exec_state,        
-        input wire [1:0] tx_mst_exec_state,     
+        input wire rx_mst_exec_state,
+        input wire [1:0] tx_mst_exec_state,
         input wire mm2s_tready,
         input wire mm2s_tvalid,
         input wire s2mm_tvalid,
         input wire s2mm_tready,
 		input wire AXIS_ARESETN,
-          
+        output wire AXIS_FRAME_RESETN,
+
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -56,11 +57,11 @@
 		// Write address ready. This signal indicates that the slave is ready
     		// to accept an address and associated control signals.
 		output wire  S_AXI_AWREADY,
-		// Write data (issued by master, acceped by Slave) 
+		// Write data (issued by master, acceped by Slave)
 		input wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_WDATA,
 		// Write strobes. This signal indicates which byte lanes hold
     		// valid data. There is one write strobe bit for each eight
-    		// bits of the write data bus.    
+    		// bits of the write data bus.
 		input wire [(C_S_AXI_DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB,
 		// Write valid. This signal indicates that valid write
     		// data and strobes are available.
@@ -174,71 +175,71 @@
 	  if ( S_AXI_ARESETN == 1'b0 )
 	    begin
 	      axi_awready <= 1'b0;
-	    end 
+	    end
 	  else
-	    begin    
+	    begin
 	      if (~axi_awready && S_AXI_AWVALID && S_AXI_WVALID)
 	        begin
-	          // slave is ready to accept write address when 
+	          // slave is ready to accept write address when
 	          // there is a valid write address and write data
-	          // on the write address and data bus. This design 
-	          // expects no outstanding transactions. 
+	          // on the write address and data bus. This design
+	          // expects no outstanding transactions.
 	          axi_awready <= 1'b1;
 	        end
-	      else           
+	      else
 	        begin
 	          axi_awready <= 1'b0;
 	        end
-	    end 
-	end       
+	    end
+	end
 
 	// Implement axi_awaddr latching
-	// This process is used to latch the address when both 
-	// S_AXI_AWVALID and S_AXI_WVALID are valid. 
+	// This process is used to latch the address when both
+	// S_AXI_AWVALID and S_AXI_WVALID are valid.
 
 	always @( posedge S_AXI_ACLK )
 	begin
 	  if ( S_AXI_ARESETN == 1'b0 )
 	    begin
 	      axi_awaddr <= 0;
-	    end 
+	    end
 	  else
-	    begin    
+	    begin
 	      if (~axi_awready && S_AXI_AWVALID && S_AXI_WVALID)
 	        begin
-	          // Write Address latching 
+	          // Write Address latching
 	          axi_awaddr <= S_AXI_AWADDR;
 	        end
-	    end 
-	end       
+	    end
+	end
 
 	// Implement axi_wready generation
 	// axi_wready is asserted for one S_AXI_ACLK clock cycle when both
-	// S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_wready is 
-	// de-asserted when reset is low. 
+	// S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_wready is
+	// de-asserted when reset is low.
 
 	always @( posedge S_AXI_ACLK )
 	begin
 	  if ( S_AXI_ARESETN == 1'b0 )
 	    begin
 	      axi_wready <= 1'b0;
-	    end 
+	    end
 	  else
-	    begin    
+	    begin
 	      if (~axi_wready && S_AXI_WVALID && S_AXI_AWVALID)
 	        begin
-	          // slave is ready to accept write data when 
+	          // slave is ready to accept write data when
 	          // there is a valid write address and write data
-	          // on the write address and data bus. This design 
-	          // expects no outstanding transactions. 
+	          // on the write address and data bus. This design
+	          // expects no outstanding transactions.
 	          axi_wready <= 1'b1;
 	        end
 	      else
 	        begin
 	          axi_wready <= 1'b0;
 	        end
-	    end 
-	end       
+	    end
+	end
 
 	// Implement memory mapped register select and write logic generation
 	// The write data is accepted and written to memory mapped registers when
@@ -265,7 +266,7 @@
 	      slv_reg9 <= 0;
 	      slv_reg10 <= 0;
 	      slv_reg11 <= 0;
-	      slv_reg12 <= 0;
+	      slv_reg12 <= {8'd0, 8'd0, 8'd50, 8'd1};
 	      slv_reg13 <= 0;
 	      slv_reg14 <= 0;
 	      slv_reg15 <= 0;
@@ -277,7 +278,7 @@
 	      slv_reg21 <= 0;
 	      slv_reg22 <= 0;
 	      slv_reg23 <= 0;
-	    end 
+	    end
 	  else begin
 	    if (slv_reg_wren)
 	      begin
@@ -285,171 +286,175 @@
 	          5'h00:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 0
 	                slv_reg0[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h01:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 1
 	                slv_reg1[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h02:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 2
 	                slv_reg2[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h03:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 3
 	                slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h04:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 4
 	                slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h05:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 5
 	                slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h06:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 6
 	                slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h07:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 7
 	                slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h08:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 8
 	                slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h09:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 9
 	                slv_reg9[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h0A:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 10
 	                slv_reg10[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h0B:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 11
 	                slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h0C:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 12
 	                slv_reg12[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h0D:
-	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
-	                // Slave register 13
-	                slv_reg13[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+                if (slv_reg13) begin
+                    slv_reg13 <= 0;
+                end else begin
+                    for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+                      if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+                        // Respective byte enables are asserted as per write strobes
+                        // Slave register 13
+                            slv_reg13[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+                      end
+               end
 	          5'h0E:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 14
 	                slv_reg14[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h0F:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 15
 	                slv_reg15[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h10:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 16
 	                slv_reg16[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h11:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 17
 	                slv_reg17[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h12:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 18
 	                slv_reg18[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h13:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 19
 	                slv_reg19[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h14:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 20
 	                slv_reg20[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h15:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 21
 	                slv_reg21[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h16:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 22
 	                slv_reg22[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          5'h17:
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
+	                // Respective byte enables are asserted as per write strobes
 	                // Slave register 23
 	                slv_reg23[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
 	          default : begin
 	                      slv_reg0 <= slv_reg0;
 	                      slv_reg1 <= slv_reg1;
@@ -479,12 +484,12 @@
 	        endcase
 	      end
 	  end
-	end    
+	end
 
 	// Implement write response logic generation
-	// The write response and response valid signals are asserted by the slave 
-	// when axi_wready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted.  
-	// This marks the acceptance of address and indicates the status of 
+	// The write response and response valid signals are asserted by the slave
+	// when axi_wready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted.
+	// This marks the acceptance of address and indicates the status of
 	// write transaction.
 
 	always @( posedge S_AXI_ACLK )
@@ -493,32 +498,32 @@
 	    begin
 	      axi_bvalid  <= 0;
 	      axi_bresp   <= 2'b0;
-	    end 
+	    end
 	  else
-	    begin    
+	    begin
 	      if (axi_awready && S_AXI_AWVALID && ~axi_bvalid && axi_wready && S_AXI_WVALID)
 	        begin
 	          // indicates a valid write response is available
 	          axi_bvalid <= 1'b1;
-	          axi_bresp  <= 2'b0; // 'OKAY' response 
+	          axi_bresp  <= 2'b0; // 'OKAY' response
 	        end                   // work error responses in future
 	      else
 	        begin
-	          if (S_AXI_BREADY && axi_bvalid) 
-	            //check if bready is asserted while bvalid is high) 
-	            //(there is a possibility that bready is always asserted high)   
+	          if (S_AXI_BREADY && axi_bvalid)
+	            //check if bready is asserted while bvalid is high)
+	            //(there is a possibility that bready is always asserted high)
 	            begin
-	              axi_bvalid <= 1'b0; 
-	            end  
+	              axi_bvalid <= 1'b0;
+	            end
 	        end
 	    end
-	end   
+	end
 
 	// Implement axi_arready generation
 	// axi_arready is asserted for one S_AXI_ACLK clock cycle when
-	// S_AXI_ARVALID is asserted. axi_awready is 
-	// de-asserted when reset (active low) is asserted. 
-	// The read address is also latched when S_AXI_ARVALID is 
+	// S_AXI_ARVALID is asserted. axi_awready is
+	// de-asserted when reset (active low) is asserted.
+	// The read address is also latched when S_AXI_ARVALID is
 	// asserted. axi_araddr is reset to zero on reset assertion.
 
 	always @( posedge S_AXI_ACLK )
@@ -527,9 +532,9 @@
 	    begin
 	      axi_arready <= 1'b0;
 	      axi_araddr  <= 32'b0;
-	    end 
+	    end
 	  else
-	    begin    
+	    begin
 	      if (~axi_arready && S_AXI_ARVALID)
 	        begin
 	          // indicates that the slave has acceped the valid read address
@@ -541,39 +546,39 @@
 	        begin
 	          axi_arready <= 1'b0;
 	        end
-	    end 
-	end       
+	    end
+	end
 
 	// Implement axi_arvalid generation
-	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
-	// S_AXI_ARVALID and axi_arready are asserted. The slave registers 
-	// data are available on the axi_rdata bus at this instance. The 
-	// assertion of axi_rvalid marks the validity of read data on the 
-	// bus and axi_rresp indicates the status of read transaction.axi_rvalid 
-	// is deasserted on reset (active low). axi_rresp and axi_rdata are 
-	// cleared to zero on reset (active low).  
+	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both
+	// S_AXI_ARVALID and axi_arready are asserted. The slave registers
+	// data are available on the axi_rdata bus at this instance. The
+	// assertion of axi_rvalid marks the validity of read data on the
+	// bus and axi_rresp indicates the status of read transaction.axi_rvalid
+	// is deasserted on reset (active low). axi_rresp and axi_rdata are
+	// cleared to zero on reset (active low).
 	always @( posedge S_AXI_ACLK )
 	begin
 	  if ( S_AXI_ARESETN == 1'b0 )
 	    begin
 	      axi_rvalid <= 0;
 	      axi_rresp  <= 0;
-	    end 
+	    end
 	  else
-	    begin    
+	    begin
 	      if (axi_arready && S_AXI_ARVALID && ~axi_rvalid)
 	        begin
 	          // Valid read data is available at the read data bus
 	          axi_rvalid <= 1'b1;
 	          axi_rresp  <= 2'b0; // 'OKAY' response
-	        end   
+	        end
 	      else if (axi_rvalid && S_AXI_RREADY)
 	        begin
 	          // Read data is accepted by the master
 	          axi_rvalid <= 1'b0;
-	        end                
+	        end
 	    end
-	end    
+	end
 
 	// Implement memory mapped register select and read logic generation
 	// Slave register read enable is asserted when valid address is available
@@ -595,7 +600,7 @@
 	        5'h09   : reg_data_out <= mm2s_tvalid;
 	        5'h0A   : reg_data_out <= s2mm_tvalid;
 	        5'h0B   : reg_data_out <= s2mm_tready;
-	        5'h0C   : reg_data_out <= slv_reg12;
+	        5'h0C   : reg_data_out <= slv_reg12;    // input: ctrl reg
 	        5'h0D   : reg_data_out <= slv_reg13;
 	        5'h0E   : reg_data_out <= slv_reg14;
 	        5'h0F   : reg_data_out <= slv_reg15;
@@ -617,21 +622,21 @@
 	  if ( S_AXI_ARESETN == 1'b0 )
 	    begin
 	      axi_rdata  <= 0;
-	    end 
+	    end
 	  else
-	    begin    
-	      // When there is a valid read address (S_AXI_ARVALID) with 
-	      // acceptance of read address by the slave (axi_arready), 
-	      // output the read dada 
+	    begin
+	      // When there is a valid read address (S_AXI_ARVALID) with
+	      // acceptance of read address by the slave (axi_arready),
+	      // output the read dada
 	      if (slv_reg_rden)
 	        begin
 	          axi_rdata <= reg_data_out;     // register read data
-	        end   
+	        end
 	    end
-	end    
+	end
 
 	// Add user logic here
-	
+
 
     // Streaming input data is stored in FIFO
     reg [AXIS_TDATA_WIDTH-1:0] rx_fifo [0 : FIFO_SIZE-1];
@@ -640,132 +645,133 @@
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
     reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
-    
+    wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
+    reg [31:0] pixel_row;
+    reg [31:0] pixel_col;
+
     reg [line_bits-1:0] rx_read_pointer; 	                     // FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer; 	                     // FIFO write pointer
     
-    wire stream_mode = 1;
+    assign AXIS_FRAME_RESETN = !slv_reg13;
 
-    always @( posedge S_AXI_ACLK )                  
-    begin                                            
-        if(!AXIS_ARESETN)                            
-        begin                                        
-            //stream_data_to_tx <= 1;  
-        end                                          
-        else 
+    always @( posedge S_AXI_ACLK )
+    begin
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
+        begin
+            //stream_data_to_tx <= 1;
+        end
+        else
         begin
             if (rx_en)
             begin
                 rx_fifo[rx_write_pointer % FIFO_SIZE] <= stream_data_from_rx[AXIS_TDATA_WIDTH-1:0];
-            end  
-            
-            if (core_en & stream_mode)
-            begin
-                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_core;
-            end     
-            
-            else if (!stream_mode)
-            begin  
-                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)]; 
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)][7:0] <= stream_to_core[15:8];       // puts blue into green
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)][15:8] <= stream_to_core[7:0];       // puts green into blue
-                tx_fifo[(tx_write_pointer % FIFO_SIZE)][23:16] <= stream_to_core[23:16];    // keeps red the same
             end
-            
-            if (tx_en) 
-            begin                                        
-                stream_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)]; 
-            end
-        end                                          
-    end       
 
-    wire [`WORD_SIZE - 1:0] mode = (1 << `OUT);
-    
-    top stuff(
+            if (core_en)
+            begin
+                stream_to_core <= rx_fifo[(rx_read_pointer % FIFO_SIZE)];
+                tx_fifo[(tx_write_pointer % FIFO_SIZE)] <= stream_from_core;
+            end
+
+            if (tx_en)
+            begin
+                stream_to_tx <= tx_fifo[(tx_read_pointer % FIFO_SIZE)];
+            end
+        end
+    end
+
+    // ctrl register layout: (by byte)
+    // +----------+----------+-----------+------+
+    // | reserved | reserved | threshold | mode |
+    // +----------+----------+-----------+------+
+    wire [`WORD_SIZE - 1:0] threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] mode      = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
+
+    top core(
         .clk(S_AXI_ACLK),
         .reset_n(S_AXI_ARESETN),
         .en(core_en),
-        .hsync(1'b0),
-        .vsync(1'b0),
-        .mode(mode),
+        .x(pixel_col),
+        .y(pixel_row),
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
+        .mode(mode),
+        .threshold(threshold),
         .out(stream_from_core) // [`PIXEL_SIZE - 1:0] out
-    );    
-    
+    );
+
     assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
-    
-	assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };    
+
+	assign stream_data_to_tx = stream_to_tx; // { 3{stream_to_tx[15:8]} };
 
 	//assign axis_tready = ((mst_exec_state == WRITE_FIFO) && (rx_write_pointer < FRAME_WIDTH) && (rx_fifo_track < FIFO_SIZE));
 	//assign axis_tvalid = ((mst_exec_state == SEND_STREAM) && (tx_read_pointer < FRAME_WIDTH) && (tx_fifo_track > 0));
-    
+
     // rx_fifo tracker
-    always @( posedge S_AXI_ACLK )                  
-    begin                                            
-        if(!AXIS_ARESETN)                            
+    always @( posedge S_AXI_ACLK )
+    begin
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
             rx_fifo_track <= 0;
         else if(~(rx_en ^ core_en))
-            rx_fifo_track <= rx_fifo_track;            
+            rx_fifo_track <= rx_fifo_track;
         else if (rx_en)
             rx_fifo_track <= rx_fifo_track + 1;
         else if (core_en)
             rx_fifo_track <= rx_fifo_track - 1;
-    end     
-    
+    end
+
     // tx_fifo tracker
-    always @( posedge S_AXI_ACLK )                  
-    begin                                            
-        if(!AXIS_ARESETN)                            
+    always @( posedge S_AXI_ACLK )
+    begin
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
             tx_fifo_track <= 0;
         else if(~(core_en ^ tx_en))
-            tx_fifo_track <= tx_fifo_track;            
+            tx_fifo_track <= tx_fifo_track;
         else if (core_en)
             tx_fifo_track <= tx_fifo_track + 1;
         else if (tx_en)
             tx_fifo_track <= tx_fifo_track - 1;
-    end   
+    end
 
 
 	//rx_read_pointer pointer
-	always@(posedge S_AXI_ACLK)                                               
-	begin                                                                            
-        if(!AXIS_ARESETN)                                                            
-	    begin                                                                        
-	      rx_read_pointer <= 0;                                                         
-	      //tx_done <= 1'b0;                                                           
-	    end                                                                          
-        else   
-        begin                                                                        
-            if (rx_read_pointer < FRAME_WIDTH)                                
-            begin                                                                      
-	            if (core_en)                                                               
-	            // read pointer is incremented after every read from the FIFO          
-	            // when FIFO read signal is enabled.                                   
-	            begin                                                                  
-	                rx_read_pointer <= rx_read_pointer + 1;                                    
-	                //tx_done <= 1'b0;                                                     
-	            end                                                                    
-	        end                                                                        
-	        else if (rx_read_pointer >= FRAME_WIDTH)                             
-	        begin                                                                      
+	always@(posedge S_AXI_ACLK)
+	begin
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
+	    begin
+	      rx_read_pointer <= 0;
+	      //tx_done <= 1'b0;
+	    end
+        else
+        begin
+            if (rx_read_pointer < FRAME_WIDTH)
+            begin
+	            if (core_en)
+	            // read pointer is incremented after every read from the FIFO
+	            // when FIFO read signal is enabled.
+	            begin
+	                rx_read_pointer <= rx_read_pointer + 1;
+	                //tx_done <= 1'b0;
+	            end
+	        end
+	        else if (rx_read_pointer >= FRAME_WIDTH)
+	        begin
 	            // tx_done is asserted when NUMBER_OF_OUTPUT_WORDS numbers of streaming data
-	            // has been out.                                                         
-	            //tx_done <= 1'b1;  
-                rx_read_pointer <= 0;                                                         
-	        end     
-        end                                                                   
-	end     
+	            // has been out.
+	            //tx_done <= 1'b1;
+                rx_read_pointer <= 0;
+	        end
+        end
+	end
 
 
 	//tx_write_pointer pointer
 	always@(posedge S_AXI_ACLK)
     begin
-        if(!AXIS_ARESETN)
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
         begin
             tx_write_pointer <= 0;
             //writes_done <= 1'b0;
-        end  
+        end
         else
         begin
             if (tx_write_pointer < FRAME_WIDTH)
@@ -780,37 +786,44 @@
             end
             else if ((tx_write_pointer >= FRAME_WIDTH))// || S_AXIS_TLAST)
             begin
-                // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data 
+                // reads_done is asserted when NUMBER_OF_INPUT_WORDS numbers of streaming data
                 // has been written to the FIFO which is also marked by S_AXIS_TLAST(kept for optional usage).
                 //writes_done <= 1'b1;
                 tx_write_pointer <= 0;
             end
-        end  
-    end        
-        
-        
-        
-/*	
-    always @( posedge S_AXIS_ACLK )
+        end
+    end
+
+
+    // generate x-y co-ordinates of current pixel
+    always @( posedge S_AXI_ACLK )
     begin
-        if(!S_AXIS_ARESETN)
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
         begin
-            hsync <= 1'b0;
-            write_line <= 0;
-        end  
-        else if((write_pointer == FRAME_WIDTH-1) && (rx_enable))
-        begin
-            hsync <= 1'b1;
-            write_line <= write_line + 1;
-        end  
+            // New frame
+            pixel_row <= 0;
+            pixel_col <= 0;
+        end
         else
         begin
-            hsync <= 1'b0;
-            write_line <= write_line;
-        end  
+            if (core_en)
+            begin
+                if (rx_read_pointer == FRAME_WIDTH - 1)
+                begin
+                    // New row
+                    pixel_col <= 0;
+                    pixel_row <= pixel_row + 1;
+                end
+                else
+                begin
+                    // New column
+                    pixel_col <= pixel_col + 1;
+                    pixel_row <= pixel_row;
+                end
+            end
+        end
     end
-*/    
-        
+
 	// User logic ends
 
 	endmodule
