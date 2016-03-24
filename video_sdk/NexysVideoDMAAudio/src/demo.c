@@ -389,7 +389,17 @@ static void SetMediumThreshold(void) {
 	SetThresholdValue(50);
 }
 static void SetHighThreshold(void) {
-	SetThresholdValue(250);
+	SetThresholdValue(100);
+}
+
+static void SetRedLowThreshold(void) {
+	SetRedThresholdValue(1);
+}
+static void SetRedMediumThreshold(void) {
+	SetRedThresholdValue(50);
+}
+static void SetRedHighThreshold(void) {
+	SetRedThresholdValue(100);
 }
 
 /*****************************************************************************/
@@ -484,6 +494,10 @@ int main(void)
 	register_uart_response("thresh",        SetThresholdMode);
 	register_uart_response("label",        SetLabelMode);
 	register_uart_response("colour",        SetColourMode);
+
+	register_uart_response("redlow",        SetRedLowThreshold);
+	register_uart_response("redmed",        SetRedMediumThreshold);
+	register_uart_response("redhigh",        SetRedHighThreshold);
 
 	register_uart_response("low",        SetLowThreshold);
 	register_uart_response("med",        SetMediumThreshold);

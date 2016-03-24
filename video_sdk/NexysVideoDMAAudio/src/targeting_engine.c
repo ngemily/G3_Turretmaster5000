@@ -81,8 +81,11 @@ void print_ip_info(void) {
     xil_printf("S2MM_Ready   = %08x\n\r", ipStatus->S2MM_ready);
     xil_printf("reserved     = %08x\n\r", ipStatus->reserved);
     xil_printf("threshold    = %08x\n\r", ipStatus->threshold);
+    xil_printf("red_threshold = %08x\n\r", ipStatus->red_threshold);
     xil_printf("mode         = %08x\n\r", ipStatus->mode);
     xil_printf("reset        = %08x\n\r", ipStatus->reset);
+    xil_printf("laser x      = %08x\n\r", ipStatus->laser_x);
+    xil_printf("laser y      = %08x\n\r", ipStatus->laser_y);
 }
 
 void SetOutputMode(TargettingControlMode mode) {
@@ -90,4 +93,7 @@ void SetOutputMode(TargettingControlMode mode) {
 }
 void SetThresholdValue(int threshold) {
 	targetingIp->threshold = threshold;
+}
+void SetRedThresholdValue(int threshold) {
+	targetingIp->red_threshold = threshold;
 }

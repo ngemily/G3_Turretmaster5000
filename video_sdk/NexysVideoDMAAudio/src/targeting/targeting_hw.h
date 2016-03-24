@@ -36,8 +36,11 @@ typedef struct {
     u32 S2MM_ready;
     u8 mode;
     u8 threshold;
-    u16 reserved;
+    u8 red_threshold;
+    u8 reserved;
     u32 reset;
+    u16 laser_y;
+    u16 laser_x;
     TargetLocation laserLocation;
     TargetObjectData objects[MAX_NUM_TARGETING_OBJECTS];
 } TargetingIPStatus;
