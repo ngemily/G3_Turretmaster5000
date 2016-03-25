@@ -134,6 +134,8 @@ static void HighLevelTest();
 static void LaserTest();
 static void MotorPatternTest();
 static void stopTest();
+static void LaserOn();
+static void LaserOff();
 
 void ButtonIsr(void *InstancePtr);
 
@@ -463,6 +465,7 @@ static void SetRedThreshold(void) {
 int main(void)
 {
     init_platform();
+    InitMotorBoard();
 
     xil_printf("\r\n--- Entering main() --- \r\n");
 
@@ -536,6 +539,9 @@ int main(void)
     register_uart_response("label",        SetLabelMode);
     register_uart_response("colour",        SetColourMode);
     register_uart_response("laser",        SetLaserMode);
+
+    register_uart_response("laseron",        LaserOn);
+    register_uart_response("laseroff",        LaserOff);
 
     register_uart_response("redthresh",        SetRedThreshold);
 
@@ -752,8 +758,8 @@ static void AutoMainLoop(void) {
         // Get the diffs in both dimensions.
         //x_diff = X_MIDDLE;
         //y_diff = Y_MIDDLE;
-        x_diff = X_MIDDLE - state.laser.x;
-        y_diff = state.laser.y - Y_MIDDLE;
+        x_diff = -(X_MIDDLE - state.laser.x);
+        y_diff = (state.laser.y - Y_MIDDLE);
 
         // Adjust laser position to correct for these diffs.
         if (x_diff > 0) {
@@ -888,4 +894,13 @@ static void TestArgs(void) {
     } else {
         xil_printf("Not a valid integer: %s\r\n", buf);
     }
+}
+
+static void LaserOn() {
+    TurnOnLaser();
+}
+
+
+static void LaserOff() {
+    TurnOffLaser();
 }
