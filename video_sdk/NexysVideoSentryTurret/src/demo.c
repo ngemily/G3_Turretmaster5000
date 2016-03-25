@@ -378,40 +378,62 @@ static void runImageProcessing(void) {
 static void SetPassthroughMode(void) {
     SetOutputMode(0);
 }
+
+
 static void SetGrayscaleMode(void) {
     SetOutputMode(1);
 }
+
+
 static void SetSobelMode(void) {
     SetOutputMode(2);
 }
+
+
 static void SetThresholdMode(void) {
     SetOutputMode(3);
 }
+
+
 static void SetLabelMode(void) {
     SetOutputMode(4);
 }
+
+
 static void SetColourMode(void) {
     SetOutputMode(5);
 }
 
-static void SetLowThreshold(void) {
-    SetThresholdValue(1);
-}
-static void SetMediumThreshold(void) {
-    SetThresholdValue(50);
-}
-static void SetHighThreshold(void) {
-    SetThresholdValue(100);
+
+static void SetLaserMode(void) {
+    SetOutputMode(6);
 }
 
-static void SetRedLowThreshold(void) {
-    SetRedThresholdValue(1);
+
+
+static void SetThreshold(void) {
+    char buf[50];
+    int result;
+
+    consume_uart_arg("thresh", buf, 50);
+    if (get_int_from_string(buf, &result)) {
+        SetThresholdValue(result);
+    } else {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+    }
 }
-static void SetRedMediumThreshold(void) {
-    SetRedThresholdValue(50);
-}
-static void SetRedHighThreshold(void) {
-    SetRedThresholdValue(100);
+
+
+static void SetRedThreshold(void) {
+    char buf[50];
+    int result;
+
+    consume_uart_arg("thresh", buf, 50);
+    if (get_int_from_string(buf, &result)) {
+        SetRedThresholdValue(result);
+    } else {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+    }
 }
 
 /*****************************************************************************/
@@ -507,14 +529,11 @@ int main(void)
     register_uart_response("thresh",        SetThresholdMode);
     register_uart_response("label",        SetLabelMode);
     register_uart_response("colour",        SetColourMode);
+    register_uart_response("laser",        SetLaserMode);
 
-    register_uart_response("redlow",        SetRedLowThreshold);
-    register_uart_response("redmed",        SetRedMediumThreshold);
-    register_uart_response("redhigh",        SetRedHighThreshold);
+    register_uart_response("redthresh",        SetRedThreshold);
 
-    register_uart_response("low",        SetLowThreshold);
-    register_uart_response("med",        SetMediumThreshold);
-    register_uart_response("high",        SetHighThreshold);
+    register_uart_response("setthresh",        SetThreshold);
 
     register_uart_response("test_args",   TestArgs);
 
@@ -599,7 +618,6 @@ static void LowLevelTest() {
 static void HighLevelTest() {
     FATFS FatFs;
     FIL FHandle;
-    unsigned int BytesWritten;
 
     if (f_mount(&FatFs, "", 0) != FR_OK) {
         xil_printf("Failed to mount filesystem.\n\r");
@@ -621,25 +639,6 @@ static void HighLevelTest() {
     }
 
     f_close(&FHandle);
-
-    /*
-       if (f_open(&FHandle, "bar.txt", FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
-       xil_printf("Failed to open bar.txt.\n\r");
-       return;
-       }
-
-       if (f_write(&FHandle, "Hello!\r\n", 8, &BytesWritten) != FR_OK) {
-       xil_printf("Failed to write to bar.txt.\n\r");
-       return;
-       }
-
-       if (BytesWritten != 8) {
-       xil_printf("Wrote incorrect number of bytes to bar.txt!\n\r");
-       return;
-       }
-
-       f_close(&FHandle);
-       */
 
     xil_printf("Test Successful!\n\r");
 }
