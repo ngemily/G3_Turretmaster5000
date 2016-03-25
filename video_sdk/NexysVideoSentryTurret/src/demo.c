@@ -142,7 +142,8 @@ static void EnterAutomaticMainLoop(void);
 static void EnterLaserTest(void);
 static void EnterMotorTest(void);
 static void EnterIpTest(void);
-static void SendImageToIP(void);
+static void DisplayLemon(void);
+static void DisplayHeman(void);
 static void TestArgs(void);
 
 /************************** Variable Definitions *****************************/
@@ -370,7 +371,9 @@ static void runImageProcessing(void) {
     video_set_input_enabled(0);
     targeting_begin_transfer(&sAxiTargetingDma);
     while(ip_busy()) MB_Sleep(200);
-    draw_dot(100, 100, COLOUR_RED);
+
+    TargetingState state = get_targeting_state();
+    draw_dot(state.laser.x, state.laser.y, COLOUR_RED);
     video_set_input_enabled(1);
 }
 
@@ -522,7 +525,8 @@ int main(void)
     register_uart_response("ipinfo",      print_ip_info);
     register_uart_response("720p",        r720p);
 
-    register_uart_response("lemon",       SendImageToIP);
+    register_uart_response("lemon",       DisplayLemon);
+    register_uart_response("heman",       DisplayHeman);
     register_uart_response("pass",        SetPassthroughMode);
     register_uart_response("gray",        SetGrayscaleMode);
     register_uart_response("sobel",        SetSobelMode);
@@ -800,7 +804,7 @@ static void EnterIpTest(void) {
 }
 
 
-static void SendImageToIP(void) {
+static void DisplayLemon(void) {
     u32 *buff = (u32 *) FRAMES_BASE_ADDR;
     SdFile *file = &sSdFileBoard[FILE_ID_LEMONGRAB];
 
@@ -813,6 +817,22 @@ static void SendImageToIP(void) {
         video_set_input_enabled(1);
     }
 }
+
+
+static void DisplayHeman(void) {
+    u32 *buff = (u32 *) FRAMES_BASE_ADDR;
+    SdFile *file = &sSdFileBoard[FILE_ID_HEMAN];
+
+    if (file->loaded) {
+        video_set_input_enabled(0);
+        memcpy(buff, file->baseAddr, file->length);
+
+        targeting_begin_transfer(&sAxiTargetingDma);
+        MB_Sleep(3000);
+        video_set_input_enabled(1);
+    }
+}
+
 
 static void TestArgs(void) {
     char buf[50];
