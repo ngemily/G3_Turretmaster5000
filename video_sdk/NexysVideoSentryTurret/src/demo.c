@@ -738,6 +738,8 @@ static void stopTest() {
 static void AutoMainLoop(void) {
     int x_diff;
     int y_diff;
+    int x_adj;
+    int y_adj;
 
     InitMotorBoard();
     TurnOnLaser();
@@ -761,29 +763,54 @@ static void AutoMainLoop(void) {
         x_diff = -(X_MIDDLE - state.laser.x);
         y_diff = (state.laser.y - Y_MIDDLE);
 
+        // Determine how much to adjust the angles.
+        x_adj = (x_diff > 0) ? x_diff : -x_diff;
+        x_adj /= 16;
+
+        if (x_adj > 10) {
+            x_adj = 10;
+        } else if (x_adj == 0 && x_diff != 0) {
+            x_adj = 1;
+        }
+
+        y_adj = (y_diff > 0) ? y_diff : -y_diff;
+        y_adj /= 8;
+
+        if (y_adj > 10) {
+            y_adj = 10;
+        } else if (y_adj == 0 && y_diff != 0) {
+            y_adj = 1;
+        }
+
         // Adjust laser position to correct for these diffs.
         if (x_diff > 0) {
             xil_printf("Need to move laser right\r\n");
-            PanRight(1);
+            PanRight(x_adj);
         } else if (x_diff < 0) {
             xil_printf("Need to move laser left\r\n");
-            PanLeft(1);
+            PanLeft(x_adj);
         } else {
             xil_printf("X location on target!\r\n");
         }
 
         if (y_diff > 0) {
             xil_printf("Need to move laser up\r\n");
-            TiltUp(1);
+            TiltUp(y_adj);
         } else if (y_diff < 0) {
             xil_printf("Need to move laser down\r\n");
-            TiltDown(1);
+            TiltDown(y_adj);
         } else {
             xil_printf("Y location on target!\r\n");
         }
 
-        MB_Sleep(3000);
+        MB_Sleep(1000);
     }
+    SetTiltAngle(0);
+    SetPanAngle(0);
+    MB_Sleep(100);
+    DisableTiltServo();
+    DisablePanServo();
+    TurnOffLaser();
 }
 
 void ManualMainLoop(void) {
