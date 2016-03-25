@@ -134,6 +134,8 @@ static void HighLevelTest();
 static void LaserTest();
 static void MotorPatternTest();
 static void stopTest();
+static void LaserOn();
+static void LaserOff();
 
 void ButtonIsr(void *InstancePtr);
 
@@ -144,7 +146,8 @@ static void EnterAutomaticMainLoop(void);
 static void EnterLaserTest(void);
 static void EnterMotorTest(void);
 static void EnterIpTest(void);
-static void SendImageToIP(void);
+static void DisplayLemon(void);
+static void DisplayHeman(void);
 static void TestArgs(void);
 
 /************************** Variable Definitions *****************************/
@@ -372,7 +375,9 @@ static void runImageProcessing(void) {
     video_set_input_enabled(0);
     targeting_begin_transfer(&sAxiTargetingDma);
     while(ip_busy()) MB_Sleep(200);
-    draw_dot(100, 100, COLOUR_RED);
+
+    TargetingState state = get_targeting_state();
+    draw_dot(state.laser.x, state.laser.y, COLOUR_RED);
     video_set_input_enabled(1);
 }
 
@@ -460,6 +465,7 @@ static void SetRedThreshold(void) {
 int main(void)
 {
     init_platform();
+    InitMotorBoard();
 
     xil_printf("\r\n--- Entering main() --- \r\n");
 
@@ -524,7 +530,8 @@ int main(void)
     register_uart_response("ipinfo",      print_ip_info);
     register_uart_response("720p",        r720p);
 
-    register_uart_response("lemon",       SendImageToIP);
+    register_uart_response("lemon",       DisplayLemon);
+    register_uart_response("heman",       DisplayHeman);
     register_uart_response("pass",        SetPassthroughMode);
     register_uart_response("gray",        SetGrayscaleMode);
     register_uart_response("sobel",        SetSobelMode);
@@ -532,6 +539,9 @@ int main(void)
     register_uart_response("label",        SetLabelMode);
     register_uart_response("colour",        SetColourMode);
     register_uart_response("laser",        SetLaserMode);
+
+    register_uart_response("laseron",        LaserOn);
+    register_uart_response("laseroff",        LaserOff);
 
     register_uart_response("redthresh",        SetRedThreshold);
 
@@ -728,6 +738,8 @@ static void stopTest() {
 static void AutoMainLoop(void) {
     int x_diff;
     int y_diff;
+    int x_adj;
+    int y_adj;
 
     InitMotorBoard();
     TurnOnLaser();
@@ -748,32 +760,57 @@ static void AutoMainLoop(void) {
         // Get the diffs in both dimensions.
         //x_diff = X_MIDDLE;
         //y_diff = Y_MIDDLE;
-        x_diff = X_MIDDLE - state.laser.x;
-        y_diff = state.laser.y - Y_MIDDLE;
+        x_diff = -(X_MIDDLE - state.laser.x);
+        y_diff = (state.laser.y - Y_MIDDLE);
+
+        // Determine how much to adjust the angles.
+        x_adj = (x_diff > 0) ? x_diff : -x_diff;
+        x_adj /= 16;
+
+        if (x_adj > 10) {
+            x_adj = 10;
+        } else if (x_adj == 0 && x_diff != 0) {
+            x_adj = 1;
+        }
+
+        y_adj = (y_diff > 0) ? y_diff : -y_diff;
+        y_adj /= 8;
+
+        if (y_adj > 10) {
+            y_adj = 10;
+        } else if (y_adj == 0 && y_diff != 0) {
+            y_adj = 1;
+        }
 
         // Adjust laser position to correct for these diffs.
         if (x_diff > 0) {
             xil_printf("Need to move laser right\r\n");
-            PanRight(1);
+            PanRight(x_adj);
         } else if (x_diff < 0) {
             xil_printf("Need to move laser left\r\n");
-            PanLeft(1);
+            PanLeft(x_adj);
         } else {
             xil_printf("X location on target!\r\n");
         }
 
         if (y_diff > 0) {
             xil_printf("Need to move laser up\r\n");
-            TiltUp(1);
+            TiltUp(y_adj);
         } else if (y_diff < 0) {
             xil_printf("Need to move laser down\r\n");
-            TiltDown(1);
+            TiltDown(y_adj);
         } else {
             xil_printf("Y location on target!\r\n");
         }
 
-        MB_Sleep(3000);
+        MB_Sleep(1000);
     }
+    SetTiltAngle(0);
+    SetPanAngle(0);
+    MB_Sleep(100);
+    DisableTiltServo();
+    DisablePanServo();
+    TurnOffLaser();
 }
 
 void ManualMainLoop(void) {
@@ -841,7 +878,7 @@ static void EnterIpTest(void) {
 }
 
 
-static void SendImageToIP(void) {
+static void DisplayLemon(void) {
     u32 *buff = (u32 *) FRAMES_BASE_ADDR;
     SdFile *file = &sSdFileBoard[FILE_ID_LEMONGRAB];
 
@@ -854,6 +891,22 @@ static void SendImageToIP(void) {
         video_set_input_enabled(1);
     }
 }
+
+
+static void DisplayHeman(void) {
+    u32 *buff = (u32 *) FRAMES_BASE_ADDR;
+    SdFile *file = &sSdFileBoard[FILE_ID_HEMAN];
+
+    if (file->loaded) {
+        video_set_input_enabled(0);
+        memcpy(buff, file->baseAddr, file->length);
+
+        targeting_begin_transfer(&sAxiTargetingDma);
+        MB_Sleep(3000);
+        video_set_input_enabled(1);
+    }
+}
+
 
 static void TestArgs(void) {
     char buf[50];
@@ -868,4 +921,13 @@ static void TestArgs(void) {
     } else {
         xil_printf("Not a valid integer: %s\r\n", buf);
     }
+}
+
+static void LaserOn() {
+    TurnOnLaser();
+}
+
+
+static void LaserOff() {
+    TurnOffLaser();
 }
