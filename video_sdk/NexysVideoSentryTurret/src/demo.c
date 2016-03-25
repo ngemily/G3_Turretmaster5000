@@ -110,6 +110,8 @@
 #define BUTTON_RIGHT (0x8)
 #define BUTTON_DOWN (0x10)
 
+#define X_MIDDLE (639)
+#define Y_MIDDLE (359)
 
 
 /**************************** Type Definitions *******************************/
@@ -724,13 +726,52 @@ static void stopTest() {
 
 
 static void AutoMainLoop(void) {
+    int x_diff;
+    int y_diff;
+
+    InitMotorBoard();
+    TurnOnLaser();
+    EnablePanServo();
+    EnableTiltServo();
+    SetTiltAngle(0);
+    SetPanAngle(0);
+
     continueTest = true;
     xil_printf("Entering auto mode.\r\n");
     while(continueTest) {
+        runImageProcessing();
+
         TargetingState state = get_targeting_state();
         xil_printf("Targeting state: Laser = (%d,%d); Obj = (%d, %d)\n\r",
                 state.laser.x, state.laser.y, state.target.x, state.target.y);
-        runImageProcessing();
+
+        // Get the diffs in both dimensions.
+        //x_diff = X_MIDDLE;
+        //y_diff = Y_MIDDLE;
+        x_diff = X_MIDDLE - state.laser.x;
+        y_diff = state.laser.y - Y_MIDDLE;
+
+        // Adjust laser position to correct for these diffs.
+        if (x_diff > 0) {
+            xil_printf("Need to move laser right\r\n");
+            PanRight(1);
+        } else if (x_diff < 0) {
+            xil_printf("Need to move laser left\r\n");
+            PanLeft(1);
+        } else {
+            xil_printf("X location on target!\r\n");
+        }
+
+        if (y_diff > 0) {
+            xil_printf("Need to move laser up\r\n");
+            TiltUp(1);
+        } else if (y_diff < 0) {
+            xil_printf("Need to move laser down\r\n");
+            TiltDown(1);
+        } else {
+            xil_printf("Y location on target!\r\n");
+        }
+
         MB_Sleep(3000);
     }
 }
