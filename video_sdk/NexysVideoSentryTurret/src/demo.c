@@ -160,8 +160,16 @@ static VideoCapture	sVideoCapt;
 
 // static variables storing information about what sounds are available, and
 // where they are stored on the SD card.
-static AudioClip sSoundBoard[SOUND_ID_MAX] = {};
-static u32 *sSoundTip;
+
+typedef struct SdFile {
+    u32 *baseAddr;
+    u32 length;
+    bool loaded;
+} SdFile;
+
+
+static SdFile sSdFileBoard[FILE_ID_MAX] = {};
+static u32 *sSdFileMemTip;
 
 volatile static enum {
     DEFAULT_LOOP = 0,
@@ -228,11 +236,11 @@ void uart_play_audio(void) {
 }
 
 
-void loadSongIntoMemory(SoundIndex soundIndex, char *name) {
+void loadFileIntoMemory(FileIndex fileIndex, char *name) {
     FATFS FatFs;
     FIL FHandle;
     UINT numBytesRead;
-    u32 *buff = sSoundTip;
+    u32 *buff = sSdFileMemTip;
     FRESULT result;
 
     if (f_mount(&FatFs, "", 0) != FR_OK) {
@@ -250,27 +258,33 @@ void loadSongIntoMemory(SoundIndex soundIndex, char *name) {
         return;
     }
 
-    sSoundBoard[soundIndex].baseAddr = (u32 *) sSoundTip;
-    sSoundBoard[soundIndex].length = numBytesRead;
-    sSoundBoard[soundIndex].loaded = true;
+    sSdFileBoard[fileIndex].baseAddr = (u32 *) sSdFileMemTip;
+    sSdFileBoard[fileIndex].length = numBytesRead;
+    sSdFileBoard[fileIndex].loaded = true;
 
     // Update the tip of the sound memory region.
-    sSoundTip += (numBytesRead >> 2);
+    sSdFileMemTip += (numBytesRead >> 2);
 }
 
 
 void loadSounds(void) {
-    loadSongIntoMemory(SOUND_ID_MACHINE_GUN, GUN_PATH);
-    loadSongIntoMemory(SOUND_ID_PORTAL_GUN, PORTAL_GUN_PATH);
-    //loadSongIntoMemory(SOUND_ID_TARGET_ACQUIRED, TARGET_PATH);
+    loadFileIntoMemory(FILE_ID_MACHINE_GUN, GUN_PATH);
+    loadFileIntoMemory(FILE_ID_PORTAL_GUN, PORTAL_GUN_PATH);
+    //loadSongIntoMemory(FILE_ID_TARGET_ACQUIRED, TARGET_PATH);
     //loadSongIntoMemory(SOUND_ID_STILL_ALIVE, SONG_PATH);
 }
 
 
+void loadImages(void) {
+    loadFileIntoMemory(FILE_ID_LEMONGRAB, LEMONGRAB_FILE_PATH);
+    loadFileIntoMemory(FILE_ID_HEMAN, HEMAN_FILE_PATH);
+}
+
+
 void playPortalSong(void) {
-    if (sSoundBoard[SOUND_ID_STILL_ALIVE].loaded) {
-        play_audio(sSoundBoard[SOUND_ID_STILL_ALIVE].baseAddr,
-                sSoundBoard[SOUND_ID_STILL_ALIVE].length);
+    if (sSdFileBoard[FILE_ID_STILL_ALIVE].loaded) {
+        play_audio(sSdFileBoard[FILE_ID_STILL_ALIVE].baseAddr,
+                sSdFileBoard[FILE_ID_STILL_ALIVE].length);
     } else {
         xil_printf("Portal song not loaded yet!\r\n");
     }
@@ -278,9 +292,9 @@ void playPortalSong(void) {
 
 
 void playGunSound(void) {
-    if (sSoundBoard[SOUND_ID_MACHINE_GUN].loaded) {
-        play_audio(sSoundBoard[SOUND_ID_MACHINE_GUN].baseAddr,
-                sSoundBoard[SOUND_ID_MACHINE_GUN].length);
+    if (sSdFileBoard[FILE_ID_MACHINE_GUN].loaded) {
+        play_audio(sSdFileBoard[FILE_ID_MACHINE_GUN].baseAddr,
+                sSdFileBoard[FILE_ID_MACHINE_GUN].length);
     } else {
         xil_printf("Gun sound not loaded yet!\r\n");
     }
@@ -288,9 +302,9 @@ void playGunSound(void) {
 
 
 void playPortalGunSound(void) {
-    if (sSoundBoard[SOUND_ID_PORTAL_GUN].loaded) {
-        play_audio(sSoundBoard[SOUND_ID_PORTAL_GUN].baseAddr,
-                sSoundBoard[SOUND_ID_PORTAL_GUN].length);
+    if (sSdFileBoard[FILE_ID_PORTAL_GUN].loaded) {
+        play_audio(sSdFileBoard[FILE_ID_PORTAL_GUN].baseAddr,
+                sSdFileBoard[FILE_ID_PORTAL_GUN].length);
     } else {
         xil_printf("Portal gun sound not loaded yet!\r\n");
     }
@@ -298,9 +312,9 @@ void playPortalGunSound(void) {
 
 
 void playTargetAcquired(void) {
-    if (sSoundBoard[SOUND_ID_TARGET_ACQUIRED].loaded) {
-        play_audio(sSoundBoard[SOUND_ID_TARGET_ACQUIRED].baseAddr,
-                sSoundBoard[SOUND_ID_TARGET_ACQUIRED].length);
+    if (sSdFileBoard[FILE_ID_TARGET_ACQUIRED].loaded) {
+        play_audio(sSdFileBoard[FILE_ID_TARGET_ACQUIRED].baseAddr,
+                sSdFileBoard[FILE_ID_TARGET_ACQUIRED].length);
     } else {
         xil_printf("Target Acquired not loaded yet!\r\n");
     }
@@ -438,10 +452,10 @@ int main(void)
     }
 
     // Initialize static variables.
-    for (int i = 0; i < SOUND_ID_MAX; i++) {
-        sSoundBoard[i].loaded = false;
+    for (int i = 0; i < FILE_ID_MAX; i++) {
+        sSdFileBoard[i].loaded = false;
     }
-    sSoundTip = (u32 *) AUDIO_BASE_ADDR;
+    sSdFileMemTip = (u32 *) AUDIO_BASE_ADDR;
 
     sButtonState = 0;
 
@@ -463,6 +477,7 @@ int main(void)
     register_uart_response("stop", stopTest);
 
     register_uart_response("load_sounds", loadSounds);
+    register_uart_response("load_images", loadImages);
 
     register_uart_response("still_alive", playPortalSong);
     register_uart_response("gun", playGunSound);
@@ -784,37 +799,17 @@ static void EnterIpTest(void) {
 
 
 static void SendImageToIP(void) {
-    FATFS FatFs;
-    FIL FHandle;
-    UINT numBytesRead;
     u32 *buff = (u32 *) FRAMES_BASE_ADDR;
-    FRESULT result;
+    SdFile *file = &sSdFileBoard[FILE_ID_LEMONGRAB];
 
-    video_set_input_enabled(0);
+    if (file->loaded) {
+        video_set_input_enabled(0);
+        memcpy(buff, file->baseAddr, file->length);
 
-    if (f_mount(&FatFs, "", 0) != FR_OK) {
-        xil_printf("Failed to mount filesystem.\n\r");
-        return;
+        targeting_begin_transfer(&sAxiTargetingDma);
+        MB_Sleep(3000);
+        video_set_input_enabled(1);
     }
-
-    if ((result = f_open(&FHandle, IMAGE_FILE_PATH, FA_READ)) != FR_OK) {
-        xil_printf("Failed to f_open %s: %d .\n\r", IMAGE_FILE_PATH, result);
-        return;
-    }
-
-    if ((result = f_read(&FHandle, (void *) buff, FRAME_SIZE_BYTES, &numBytesRead)) != FR_OK) {
-        xil_printf("Failed to f_read %s: %d.\n\r", IMAGE_FILE_PATH, result);
-        return;
-    }
-
-    if (numBytesRead < FRAME_SIZE_BYTES) {
-        xil_printf("Incorrect number of bytes read from image: %d\r\n", numBytesRead);
-        return;
-    }
-
-    targeting_begin_transfer(&sAxiTargetingDma);
-    MB_Sleep(10000);
-    video_set_input_enabled(1);
 }
 
 static void TestArgs(void) {
