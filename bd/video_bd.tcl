@@ -426,7 +426,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: axi_quad_spi_0, and set properties
   set axi_quad_spi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_quad_spi:3.2 axi_quad_spi_0 ]
-  set_property -dict [ list CONFIG.C_FIFO_DEPTH {0} CONFIG.C_SCK_RATIO {16} CONFIG.C_USE_STARTUP {0} CONFIG.FIFO_INCLUDED {0}  ] $axi_quad_spi_0
+  set_property -dict [ list CONFIG.C_FIFO_DEPTH {0} CONFIG.C_SCK_RATIO {4} CONFIG.C_USE_STARTUP {0} CONFIG.FIFO_INCLUDED {0}  ] $axi_quad_spi_0
 
   # Create instance: axi_timer_0, and set properties
   set axi_timer_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_timer:2.0 axi_timer_0 ]
@@ -688,4 +688,6 @@ CONFIG.G_USE_EXCEPTIONS {1}  ] $microblaze_0
 
 create_root_design ""
 
+
+puts "\n\nWARNING: This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
