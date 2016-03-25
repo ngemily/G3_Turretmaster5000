@@ -129,7 +129,7 @@ module r_minus_gb_threshold (
     
     assign q = (d > threshold) ? 1 : 0;
 
-    assign debug = {d, 8'b0, 8'b0};
+    assign debug = (d > threshold) ? {d, 8'b0, 8'b0} : {8'b0, 8'b0, 8'b0};
 endmodule
     
     
