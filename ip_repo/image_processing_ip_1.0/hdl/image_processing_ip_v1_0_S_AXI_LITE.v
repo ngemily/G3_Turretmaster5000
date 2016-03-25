@@ -645,6 +645,7 @@
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_core;
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_laser;
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator;
+    reg [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator_reg;
     //reg [AXIS_TDATA_WIDTH-1:0] stream_to_tx;
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
@@ -668,7 +669,12 @@
 
     assign AXIS_FRAME_RESETN = !slv_reg13;
     assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
-    assign stream_from_core = (mode == `LASER) ? stream_from_laser : stream_from_detectinator;
+    assign stream_from_core = (mode == `LASER) ? stream_from_laser : stream_from_detectinator_reg;
+
+    always @(posedge S_AXI_ACLK)
+    begin
+        stream_from_detectinator_reg <= stream_from_detectinator;
+    end
 
     always @( posedge S_AXI_ACLK )
     begin
