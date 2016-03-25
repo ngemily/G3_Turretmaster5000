@@ -99,6 +99,33 @@ void SetOutputMode(TargettingControlMode mode) {
 }
 
 
+// Hard coded to draw on frame 1
+XStatus draw_dot(int x, int y, colour_t colour) {
+    int stride = VMODE_1280x720.width*3;
+    u8 *frame = ((u8 *) FRAMES_BASE_ADDR) + (stride*VMODE_1280x720.height);
+    int xo, yo;
+    for (yo=-1; yo<=1; yo++) {
+        for (xo=-1; xo<=1; xo++) {
+            *(frame + (y+yo)*stride + (x+xo)*3)     = 0xFF;
+            *(frame + (y+yo)*stride + (x+xo)*3 + 1) = 0x00;
+            *(frame + (y+yo)*stride + (x+xo)*3 + 2) = 0x00;
+        }
+    }
+    for (xo=-3; xo<=3; xo++) {
+        *(frame + (y)*stride + (x+xo)*3)     = 0xFF;
+        *(frame + (y)*stride + (x+xo)*3 + 1) = 0x00;
+        *(frame + (y)*stride + (x+xo)*3 + 2) = 0x00;
+    }
+    for (yo=-3; yo<=3; yo++) {
+        *(frame + (y+yo)*stride + (x)*3)     = 0xFF;
+        *(frame + (y+yo)*stride + (x)*3 + 1) = 0x00;
+        *(frame + (y+yo)*stride + (x)*3 + 2) = 0x00;
+    }
+
+   return XST_SUCCESS;
+}
+
+
 void SetThresholdValue(int threshold) {
     targetingIp->threshold = threshold;
 }

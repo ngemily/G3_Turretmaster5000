@@ -370,6 +370,7 @@ static void runImageProcessing(void) {
     video_set_input_enabled(0);
     targeting_begin_transfer(&sAxiTargetingDma);
     while(ip_busy()) MB_Sleep(200);
+    draw_dot(100, 100, COLOUR_RED);
     video_set_input_enabled(1);
 }
 
@@ -727,7 +728,9 @@ static void AutoMainLoop(void) {
     continueTest = true;
     xil_printf("Entering auto mode.\r\n");
     while(continueTest) {
-        //      TargetingState state = get_targeting_state();
+        TargetingState state = get_targeting_state();
+        xil_printf("Targeting state: Laser = (%d,%d); Obj = (%d, %d)\n\r",
+                state.laser.x, state.laser.y, state.target.x, state.target.y);
         runImageProcessing();
         MB_Sleep(3000);
     }

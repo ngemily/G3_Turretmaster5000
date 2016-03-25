@@ -27,7 +27,7 @@ volatile static int outputComplete = 1;
  *****************************************************************************/
 static void vdmaInputComplete(void *CallBackRef, u32 InterruptTypes)
 {
-    xil_printf("vdmaInputComplete\n\r");
+//    xil_printf("vdmaInputComplete\n\r");
 }
 static void vdmaInputError(void *CallBackRef, u32 InterruptTypes)
 {
@@ -35,7 +35,7 @@ static void vdmaInputError(void *CallBackRef, u32 InterruptTypes)
 }
 static void vdmaOutputComplete(void *CallBackRef, u32 InterruptTypes)
 {
-    xil_printf("vdmaOutputComplete\n\r");
+//    xil_printf("vdmaOutputComplete\n\r");
     outputComplete = 1;
 }
 static void vdmaOutputError(void *CallBackRef, u32 InterruptTypes)
