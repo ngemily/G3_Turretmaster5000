@@ -181,7 +181,6 @@ int VideoStart(VideoCapture *videoPtr)
 	for (i = 0; i < VIDEO_NUM_FRAMES; i++)
 	{
 		videoPtr->vdmaConfig.FrameStoreStartAddr[i] = (u32)  videoPtr->framePtr[i];
-        xil_printf("videoIn BUFF %d: %08x\n\r", i, videoPtr->vdmaConfig.FrameStoreStartAddr[i]);
 	}
 
 	xdbg_printf(XDBG_DEBUG_GENERAL, "Starting VDMA for Video capture\n\r");

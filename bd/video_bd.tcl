@@ -441,7 +441,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: axi_vdma_1, and set properties
   set axi_vdma_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_vdma:6.2 axi_vdma_1 ]
-  set_property -dict [ list CONFIG.c_m_axi_mm2s_data_width {128} CONFIG.c_m_axi_s2mm_data_width {128} CONFIG.c_m_axis_mm2s_tdata_width {24} CONFIG.c_mm2s_genlock_mode {0} CONFIG.c_mm2s_linebuffer_depth {2048} CONFIG.c_mm2s_max_burst_length {256} CONFIG.c_s2mm_genlock_mode {0} CONFIG.c_s2mm_linebuffer_depth {2048} CONFIG.c_s2mm_max_burst_length {256} CONFIG.c_use_s2mm_fsync {0}  ] $axi_vdma_1
+  set_property -dict [ list CONFIG.c_m_axi_mm2s_data_width {128} CONFIG.c_m_axi_s2mm_data_width {128} CONFIG.c_m_axis_mm2s_tdata_width {24} CONFIG.c_mm2s_genlock_mode {0} CONFIG.c_mm2s_linebuffer_depth {2048} CONFIG.c_mm2s_max_burst_length {32} CONFIG.c_s2mm_genlock_mode {0} CONFIG.c_s2mm_linebuffer_depth {2048} CONFIG.c_s2mm_max_burst_length {32} CONFIG.c_use_s2mm_fsync {0}  ] $axi_vdma_1
 
   # Create instance: d_axi_i2s_audio_0, and set properties
   set d_axi_i2s_audio_0 [ create_bd_cell -type ip -vlnv digilentinc.com:user:d_axi_i2s_audio:2.0 d_axi_i2s_audio_0 ]

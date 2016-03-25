@@ -141,9 +141,8 @@ static void EnterManualMainLoop(void);
 static void EnterAutomaticMainLoop(void);
 static void EnterLaserTest(void);
 static void EnterMotorTest(void);
-
+static void EnterIpTest(void);
 static void SendImageToIP(void);
-
 static void TestArgs(void);
 
 /************************** Variable Definitions *****************************/
@@ -170,6 +169,7 @@ volatile static enum {
 	AUTOMATIC_MODE,
 	LASER_TEST,
 	MOTOR_TEST,
+	IP_TEST,
 } sLoopSelect;
 
 
@@ -353,19 +353,12 @@ static void r720p(void) {
 
 
 static void runImageProcessing(void) {
-	video_set_input_enabled(0);
-	video_set_output_enabled(0);
-	targeting_begin_transfer(&sAxiTargetingDma);
+    video_set_input_enabled(0);
+    targeting_begin_transfer(&sAxiTargetingDma);
+    while(ip_busy()) MB_Sleep(200);
+    video_set_input_enabled(1);
 }
 
-
-static void loopIp(void) {
-	int i;
-	for (i=0; i<30; i++) {
-		runImageProcessing();
-		MB_Sleep(3000);
-	}
-}
 
 static void SetPassthroughMode(void) {
 	SetOutputMode(0);
@@ -393,7 +386,17 @@ static void SetMediumThreshold(void) {
 	SetThresholdValue(50);
 }
 static void SetHighThreshold(void) {
-	SetThresholdValue(250);
+	SetThresholdValue(100);
+}
+
+static void SetRedLowThreshold(void) {
+	SetRedThresholdValue(1);
+}
+static void SetRedMediumThreshold(void) {
+	SetRedThresholdValue(50);
+}
+static void SetRedHighThreshold(void) {
+	SetRedThresholdValue(100);
 }
 
 /*****************************************************************************/
@@ -470,7 +473,7 @@ int main(void)
 	register_uart_response("auto", EnterAutomaticMainLoop);
 
 	register_uart_response("passthrough", passthroughHdmi);
-	register_uart_response("runip",       runImageProcessing);
+	register_uart_response("runip",       EnterIpTest);
 	register_uart_response("videoinfo",   print_video_info);
 	register_uart_response("df1",         df1);
 	register_uart_response("df2",         df2);
@@ -480,7 +483,6 @@ int main(void)
 	register_uart_response("vf0",         vf0);
 	register_uart_response("ipinfo",      print_ip_info);
 	register_uart_response("720p",        r720p);
-	register_uart_response("loop",        loopIp);
 
 	register_uart_response("lemon",       SendImageToIP);
 	register_uart_response("pass",        SetPassthroughMode);
@@ -489,6 +491,10 @@ int main(void)
 	register_uart_response("thresh",        SetThresholdMode);
 	register_uart_response("label",        SetLabelMode);
 	register_uart_response("colour",        SetColourMode);
+
+	register_uart_response("redlow",        SetRedLowThreshold);
+	register_uart_response("redmed",        SetRedMediumThreshold);
+	register_uart_response("redhigh",        SetRedHighThreshold);
 
 	register_uart_response("low",        SetLowThreshold);
 	register_uart_response("med",        SetMediumThreshold);
@@ -505,6 +511,7 @@ int main(void)
 			case AUTOMATIC_MODE: AutoMainLoop(); break;
 			case LASER_TEST: LaserTest(); break;
 			case MOTOR_TEST: MotorPatternTest(); break;
+            case IP_TEST: runImageProcessing(); sLoopSelect = DEFAULT_LOOP; break;
 			default: MB_Sleep(100); break;
 		}
 	}
@@ -702,12 +709,13 @@ static void stopTest() {
 
 
 static void AutoMainLoop(void) {
-	continueTest = true;
-	xil_printf("Entering manual mode.\r\n");
-	while(continueTest) {
-		TargetingState state = get_targeting_state();
-		MB_Sleep(1000);
-	}
+    continueTest = true;
+    xil_printf("Entering auto mode.\r\n");
+    while(continueTest) {
+//      TargetingState state = get_targeting_state();
+        runImageProcessing();
+        MB_Sleep(3000);
+    }
 }
 
 void ManualMainLoop(void) {
@@ -770,6 +778,10 @@ static void EnterMotorTest(void) {
 	sLoopSelect = MOTOR_TEST;
 }
 
+static void EnterIpTest(void) {
+    sLoopSelect = IP_TEST;
+}
+
 
 static void SendImageToIP(void) {
 	FATFS FatFs;
@@ -801,6 +813,8 @@ static void SendImageToIP(void) {
 	}
 
 	targeting_begin_transfer(&sAxiTargetingDma);
+	MB_Sleep(10000);
+	video_set_input_enabled(1);
 }
 
 static void TestArgs(void) {
@@ -817,4 +831,3 @@ static void TestArgs(void) {
 		xil_printf("Not a valid integer: %s\r\n", buf);
 	}
 }
-

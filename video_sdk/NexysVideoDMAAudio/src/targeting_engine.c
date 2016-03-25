@@ -48,6 +48,8 @@ XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
 }
 
 XStatus targeting_begin_transfer(XAxiVdma *dmaPtr) {
+    targetingIp->reset = 1;
+    targetingIp->reset = 0;
     return fnStartTargetingDmaInOut(dmaPtr, 0, 1);
 }
 
@@ -61,6 +63,9 @@ TargetingState get_targeting_state(void) {
 	return state;
 }
 
+int ip_busy(void) {
+    return !isVdmaComplete();
+}
 
 void print_ip_info(void) {
     xil_printf("VDMA Info:\n\r");
@@ -82,8 +87,10 @@ void print_ip_info(void) {
     xil_printf("S2MM_Ready   = %08x\n\r", ipStatus->S2MM_ready);
     xil_printf("reserved     = %08x\n\r", ipStatus->reserved);
     xil_printf("threshold    = %08x\n\r", ipStatus->threshold);
+    xil_printf("red_threshold = %08x\n\r", ipStatus->red_threshold);
     xil_printf("mode         = %08x\n\r", ipStatus->mode);
     xil_printf("reset        = %08x\n\r", ipStatus->reset);
+    xil_printf("laser        = (%d, %d)\n\r", ipStatus->laserLocation.x, ipStatus->laserLocation.y);
 }
 
 
@@ -94,4 +101,7 @@ void SetOutputMode(TargettingControlMode mode) {
 
 void SetThresholdValue(int threshold) {
 	targetingIp->threshold = threshold;
+}
+void SetRedThresholdValue(int threshold) {
+	targetingIp->red_threshold = threshold;
 }

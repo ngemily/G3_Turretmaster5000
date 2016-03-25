@@ -26,6 +26,9 @@ XStatus        initialize_targeting(XAxiVdma *targetingDmaPtr);
 XStatus        targeting_begin_transfer(XAxiVdma *dmaPtr);
 void           print_ip_info(void);
 TargetingState get_targeting_state(void);
+int            ip_busy(void);
+
+void SetOutputMode(TargettingControlMode mode);
 void 		   SetOutputMode(TargettingControlMode mode);
 void           SetThresholdValue(int threshold);
 
