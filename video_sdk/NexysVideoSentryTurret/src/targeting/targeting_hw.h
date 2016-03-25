@@ -45,9 +45,9 @@ typedef struct {
 
 
 typedef enum {
-	SOBEL_MODE = 0,
-	COLOUR_TRANSFORM,
-	PASSTHROUGH
+    SOBEL_MODE = 0,
+    COLOUR_TRANSFORM,
+    PASSTHROUGH
 } TargettingControlMode;
 
 

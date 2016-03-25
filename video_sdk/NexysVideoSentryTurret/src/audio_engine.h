@@ -12,9 +12,9 @@
 #include <stdbool.h>
 
 typedef struct AudioClip {
-	u32 *baseAddr;
-	u32 length;
-	bool loaded;
+    u32 *baseAddr;
+    u32 length;
+    bool loaded;
 } AudioClip;
 
 XStatus initialize_audio(XIic *IicPtr, XAxiDma *AxiDmaPtr);

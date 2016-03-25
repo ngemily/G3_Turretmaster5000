@@ -102,7 +102,7 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
      * Initialize the Display controller and start it
      */
     Status = DisplayInitialize(&dispCtrl, &vdma, DISP_VTC_ID, DYNCLK_BASEADDR,
-                                pFrames, FRAME_BUFFER_STRIDE);
+            pFrames, FRAME_BUFFER_STRIDE);
     if (Status != XST_SUCCESS)
     {
         xil_printf("Display Ctrl initialization failed during demo initialization%d\r\n", Status);
@@ -156,21 +156,21 @@ XStatus video_set_output_frame(u32 idx) {
 XStatus video_set_output_resolution(enum OUTPUT_RESOULTION res) {
     const VideoMode *mode = NULL;
     switch (res) {
-    case RES_1080P:
-        mode = &VMODE_1920x1080;
-        break;
-    case RES_720P:
-    	print("720p Selected\n\r");
-        mode = &VMODE_1280x720;
-        break;
-    case RES_480P:
-        mode = &VMODE_640x480;
-        break;
-    case RES_SVGA:
-        mode = &VMODE_800x600;
-        break;
-    default:
-        break;
+        case RES_1080P:
+            mode = &VMODE_1920x1080;
+            break;
+        case RES_720P:
+            print("720p Selected\n\r");
+            mode = &VMODE_1280x720;
+            break;
+        case RES_480P:
+            mode = &VMODE_640x480;
+            break;
+        case RES_SVGA:
+            mode = &VMODE_800x600;
+            break;
+        default:
+            break;
     }
 
     if (NULL == mode) {
@@ -192,7 +192,7 @@ XStatus video_set_input_enabled(int enable) {
         print("Video Diconnected, can't enable!!\n\r");
         return XST_FAILURE;
     } else {
-    	print("No change to video input state\n\r");
+        print("No change to video input state\n\r");
     }
 
     return XST_SUCCESS;
@@ -202,9 +202,9 @@ XStatus video_set_output_enabled(int enable) {
     if (!enable && DISPLAY_RUNNING == dispCtrl.state) {
         DisplayStop(&dispCtrl);
     } else if (enable && DISPLAY_STOPPED == dispCtrl.state) {
-    	DisplayStart(&dispCtrl);
+        DisplayStart(&dispCtrl);
     } else {
-    	print("No change to display state\n\r");
+        print("No change to display state\n\r");
     }
 
     return XST_SUCCESS;

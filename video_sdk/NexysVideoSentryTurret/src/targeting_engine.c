@@ -54,13 +54,13 @@ XStatus targeting_begin_transfer(XAxiVdma *dmaPtr) {
 }
 
 TargetingState get_targeting_state(void) {
-	TargetingState state;
-	//while (!targetingIp->dataValid);
-	state.laser.x = targetingIp->laserLocation.x;
-	state.laser.y = targetingIp->laserLocation.y;
-	state.target.x = 0; // TODO
-	state.target.y = 0; // TODO
-	return state;
+    TargetingState state;
+    //while (!targetingIp->dataValid);
+    state.laser.x = targetingIp->laserLocation.x;
+    state.laser.y = targetingIp->laserLocation.y;
+    state.target.x = 0; // TODO
+    state.target.y = 0; // TODO
+    return state;
 }
 
 int ip_busy(void) {
@@ -95,13 +95,13 @@ void print_ip_info(void) {
 
 
 void SetOutputMode(TargettingControlMode mode) {
-	targetingIp->mode = mode;
+    targetingIp->mode = mode;
 }
 
 
 void SetThresholdValue(int threshold) {
-	targetingIp->threshold = threshold;
+    targetingIp->threshold = threshold;
 }
 void SetRedThresholdValue(int threshold) {
-	targetingIp->red_threshold = threshold;
+    targetingIp->red_threshold = threshold;
 }

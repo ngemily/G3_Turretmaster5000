@@ -204,9 +204,9 @@ XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdx
     XAxiVdma_SetFrameCounter(AxiVdma, &frameCounterCfg);
 
     XAxiVdma_IntrEnable(AxiVdma,
-        		XAXIVDMA_IXR_ERROR_MASK|XAXIVDMA_IXR_FRMCNT_MASK, XAXIVDMA_READ);
+            XAXIVDMA_IXR_ERROR_MASK|XAXIVDMA_IXR_FRMCNT_MASK, XAXIVDMA_READ);
     XAxiVdma_IntrEnable(AxiVdma,
-        		XAXIVDMA_IXR_ERROR_MASK|XAXIVDMA_IXR_FRMCNT_MASK, XAXIVDMA_WRITE);
+            XAXIVDMA_IXR_ERROR_MASK|XAXIVDMA_IXR_FRMCNT_MASK, XAXIVDMA_WRITE);
 
     // Start the read channel (Mem -> IP)
     Status = XAxiVdma_DmaStart(AxiVdma, XAXIVDMA_READ);

@@ -13,13 +13,13 @@
 #include "targeting/targeting_hw.h"
 
 typedef struct {
-	u16 x;
-	u16 y;
+    u16 x;
+    u16 y;
 } location_t;
 
 typedef struct {
-	location_t laser;
-	location_t target;
+    location_t laser;
+    location_t target;
 } TargetingState;
 
 XStatus        initialize_targeting(XAxiVdma *targetingDmaPtr);
