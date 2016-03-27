@@ -652,6 +652,7 @@
     reg [15:0] pixel_row;
     reg [15:0] pixel_col;
     wire [31:0] laser_xy;
+    wire [7:0] obj_id = 8'd1;
     wire [15:0] obj_x;
     wire [15:0] obj_y;
 
@@ -659,13 +660,13 @@
     reg [line_bits-1:0] tx_write_pointer;                        // tx FIFO write pointer
     
     // ctrl register layout: (by byte)
-    // +--------+---------------+-----------+------+
-    // | obj_id | red_threshold | threshold | mode |
-    // +--------+---------------+-----------+------+
-    wire [`WORD_SIZE - 1:0] obj_id        = ctrl[`WORD_SIZE * 4 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] red_threshold = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] threshold     = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] mode          = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
+    // +-----------------+---------------+-----------------+------+
+    // | flood_threshold | red_threshold | sobel_threshold | mode |
+    // +-----------------+---------------+-----------------+------+
+    wire [`WORD_SIZE - 1:0] flood_threshold = ctrl[`WORD_SIZE * 4 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] red_threshold   = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] sobel_threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] mode            = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
     assign AXIS_FRAME_RESETN = !slv_reg13;
     assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
@@ -710,7 +711,8 @@
         .y(pixel_row),
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
         .mode(mode),
-        .threshold(threshold),
+        .sobel_threshold(sobel_threshold),
+        .flood_threshold(flood_threshold),
         .obj_id(obj_id),
         .out(stream_from_detectinator), // [`PIXEL_SIZE - 1:0] out
         .obj_x(obj_x),
