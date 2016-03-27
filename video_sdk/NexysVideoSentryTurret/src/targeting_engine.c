@@ -85,8 +85,8 @@ void print_ip_info(void) {
     xil_printf("MM2S_Valid   = %08x\n\r", ipStatus->MM2S_valid);
     xil_printf("S2MM_Valid   = %08x\n\r", ipStatus->S2MM_valid);
     xil_printf("S2MM_Ready   = %08x\n\r", ipStatus->S2MM_ready);
-    xil_printf("reserved     = %08x\n\r", ipStatus->reserved);
-    xil_printf("threshold    = %08x\n\r", ipStatus->threshold);
+    xil_printf("flood threshold = %08x\n\r", ipStatus->flood_threshold);
+    xil_printf("sobel threshold = %08x\n\r", ipStatus->sobel_threshold);
     xil_printf("red_threshold = %08x\n\r", ipStatus->red_threshold);
     xil_printf("mode         = %08x\n\r", ipStatus->mode);
     xil_printf("reset        = %08x\n\r", ipStatus->reset);
@@ -125,9 +125,11 @@ XStatus draw_dot(int x, int y, colour_t colour) {
    return XST_SUCCESS;
 }
 
-
-void SetThresholdValue(int threshold) {
-    targetingIp->threshold = threshold;
+void SetFloodThresholdValue(int threshold) {
+    targetingIp->flood_threshold = threshold;
+}
+void SetSobelThresholdValue(int threshold) {
+    targetingIp->sobel_threshold = threshold;
 }
 void SetRedThresholdValue(int threshold) {
     targetingIp->red_threshold = threshold;

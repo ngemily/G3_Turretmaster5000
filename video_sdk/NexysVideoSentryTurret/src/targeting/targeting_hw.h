@@ -35,9 +35,9 @@ typedef struct {
     u32 S2MM_valid;
     u32 S2MM_ready;
     u8 mode;
-    u8 threshold;
+    u8 sobel_threshold;
     u8 red_threshold;
-    u8 reserved;
+    u8 flood_threshold;
     u32 reset;
     TargetLocation laserLocation;
     TargetObjectData objects[MAX_NUM_TARGETING_OBJECTS];

@@ -416,15 +416,29 @@ static void SetLaserMode(void) {
     SetOutputMode(6);
 }
 
+static void SetFloodMode(void) {
+    SetOutputMode(7);
+}
 
-
-static void SetThreshold(void) {
+static void SetSobelThreshold(void) {
     char buf[50];
     int result;
 
-    consume_uart_arg("thresh", buf, 50);
+    consume_uart_arg("sobel threshold [0:255]:", buf, 50);
     if (get_int_from_string(buf, &result)) {
-        SetThresholdValue(result);
+        SetSobelThresholdValue(result);
+    } else {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+    }
+}
+
+static void SetFloodThreshold(void) {
+    char buf[50];
+    int result;
+
+    consume_uart_arg("flood thresh [0-15]:", buf, 50);
+    if (get_int_from_string(buf, &result)) {
+        SetFloodThresholdValue(result);
     } else {
         xil_printf("Not a valid integer: %s\r\n", buf);
     }
@@ -539,13 +553,14 @@ int main(void)
     register_uart_response("label",        SetLabelMode);
     register_uart_response("colour",        SetColourMode);
     register_uart_response("laser",        SetLaserMode);
+    register_uart_response("flood",        SetFloodMode);
 
     register_uart_response("laseron",        LaserOn);
     register_uart_response("laseroff",        LaserOff);
 
     register_uart_response("redthresh",        SetRedThreshold);
-
-    register_uart_response("setthresh",        SetThreshold);
+    register_uart_response("setsobelthresh",   SetSobelThreshold);
+    register_uart_response("setfloodthresh",   SetFloodThreshold);
 
     register_uart_response("test_args",   TestArgs);
 
