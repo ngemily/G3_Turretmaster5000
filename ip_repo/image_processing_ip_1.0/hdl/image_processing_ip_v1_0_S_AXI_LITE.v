@@ -1,7 +1,8 @@
 `timescale 1 ns / 1 ps
 
 `include "global.vh"
-`define LASER 6
+`define INPUT_ONLY 1
+`define LASER      6
 
     module image_processing_ip_v1_0_S_AXI_LITE #
     (
@@ -647,6 +648,7 @@
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator;
     reg [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator_reg;
 
+    wire [7:0] throughput_mode;
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl2      = slv_reg15;
@@ -673,6 +675,7 @@
     // +----------+----------+----------+--------+
     // | reserved | reserved | reserved | obj_id |
     // +----------+----------+----------+--------+
+    wire [`WORD_SIZE - 1:0] throughput_mode = ctrl2[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
     wire [`WORD_SIZE - 1:0] obj_id          = ctrl2[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
     assign AXIS_FRAME_RESETN = !slv_reg13;
@@ -755,7 +758,7 @@
     // tx_fifo tracker
     always @( posedge S_AXI_ACLK )
     begin
-        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN)
+        if(!AXIS_ARESETN || !AXIS_FRAME_RESETN || (throughput_mode == `INPUT_ONLY))
             tx_fifo_track <= 0;
         else if(~(core_en ^ tx_en))
             tx_fifo_track <= tx_fifo_track;
