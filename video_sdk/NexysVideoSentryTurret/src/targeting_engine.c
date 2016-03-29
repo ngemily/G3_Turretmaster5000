@@ -68,8 +68,8 @@ TargetingState get_targeting_state(void) {
     //while (!targetingIp->dataValid);
     state.laser.x  = targetingIp->laserLocation.x;
     state.laser.y  = targetingIp->laserLocation.y;
-    state.target.x = dbgTargetX; // TODO
-    state.target.y = dbgTargetY; // TODO
+    state.target.x = targetingIp->obj_y / targetingIp->obj_area; // TODO
+    state.target.y = targetingIp->obj_x / targetingIp->obj_area; // TODO
     return state;
 }
 
@@ -101,6 +101,9 @@ void print_ip_info(void) {
     xil_printf("  mode            = %08x\n\r", ipStatus->mode);
     xil_printf("  reset           = %08x\n\r", ipStatus->reset);
     xil_printf("  laser           = (%d, %d)\n\r", ipStatus->laserLocation.x, ipStatus->laserLocation.y);
+    xil_printf("  num_labels      = %08x\n\r", ipStatus->num_objs);
+    xil_printf("  obj_id          = %08x\n\r", ipStatus->obj_id);
+    xil_printf("  obj_loc         = (%d, %d)\n\r", ipStatus->obj_x / ipStatus->obj_area, ipStatus->obj_y / ipStatus->obj_area);
 }
 
 
@@ -143,4 +146,7 @@ void SetSobelThresholdValue(int threshold) {
 }
 void SetRedThresholdValue(int threshold) {
     targetingIp->red_threshold = threshold;
+}
+void SetObjIdValue(int id) {
+    targetingIp->obj_id = id;
 }

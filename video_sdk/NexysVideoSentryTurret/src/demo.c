@@ -474,6 +474,18 @@ static void SetRedThreshold(void) {
     }
 }
 
+static void SetObjId(void) {
+    char buf[50];
+    int result;
+
+    consume_uart_arg("obj id [0-255]", buf, 50);
+    if (get_int_from_string(buf, &result)) {
+        SetObjIdValue(result);
+    } else {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+    }
+}
+
 /*****************************************************************************/
 /**
  *
@@ -579,6 +591,8 @@ int main(void)
     register_uart_response("redthresh",        SetRedThreshold);
     register_uart_response("setsobelthresh",   SetSobelThreshold);
     register_uart_response("setfloodthresh",   SetFloodThreshold);
+
+    register_uart_response("setobjid",   SetObjId);
 
     register_uart_response("test_args",   TestArgs);
 

@@ -40,6 +40,13 @@ typedef struct {
     u8 flood_threshold;
     u32 reset;
     TargetLocation laserLocation;
+    u8 obj_id;
+    u8 input_only;
+    u16 reserved;
+    u32 num_objs;
+    u32 obj_area;
+    u32 obj_x;
+    u32 obj_y;
     TargetObjectData objects[MAX_NUM_TARGETING_OBJECTS];
 } TargetingIPStatus;
 
