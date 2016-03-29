@@ -22,19 +22,27 @@ typedef struct {
     location_t target;
 } TargetingState;
 
-typedef enum {
-    COLOUR_RED,
+typedef struct {
+    u8 red;
+    u8 green;
+    u8 blue;
 } colour_t;
 
+static const colour_t COLOUR_RED  = {0xFF, 0x00, 0x00};
+static const colour_t COLOUR_BLUE = {0x00, 0x00, 0xFF};
+
 XStatus        initialize_targeting(XAxiVdma *targetingDmaPtr);
-XStatus        targeting_begin_transfer(XAxiVdma *dmaPtr);
+XStatus        targeting_begin_transfer(XAxiVdma *dmaPtr, int outputEnable);
 void           print_ip_info(void);
 TargetingState get_targeting_state(void);
 int            ip_busy(void);
 XStatus        draw_dot(int x, int y, colour_t colour);
 
 void SetOutputMode(TargettingControlMode mode);
-void 		   SetOutputMode(TargettingControlMode mode);
-void           SetThresholdValue(int threshold);
+void SetOutputMode(TargettingControlMode mode);
+void SetThresholdValue(int threshold);
+void SetFloodThresholdValue(int threshold);
+void SetSobelThresholdValue(int threshold);
+void SetRedThresholdValue(int threshold);
 
 #endif /* TARGETING_ENGINE_H_ */

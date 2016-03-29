@@ -23,7 +23,7 @@
 XStatus fnConfigTargetingDma(XAxiVdma *AxiVdma, u8 *baseFramePtr);
 XStatus fnSetupTargetingDmaInput(XAxiVdma *AxiVdma, const VideoMode *videoMode, int frameIdx);
 XStatus fnSetupTargetingDmaOutput(XAxiVdma *AxiVdma, const VideoMode *videoMode, int frameIdx);
-XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdxOut);
+XStatus fnStartTargetingDmaInOut(XAxiVdma *AxiVdma, int frameIdxIn, int frameIdxOut, int enableOutput);
 int     isVdmaComplete(void);
 
 #endif /* DMA_TARGETING_H_ */

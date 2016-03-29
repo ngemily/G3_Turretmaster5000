@@ -110,9 +110,7 @@
 #define BUTTON_RIGHT (0x8)
 #define BUTTON_DOWN (0x10)
 
-#define X_MIDDLE (639)
-#define Y_MIDDLE (359)
-
+#define LASER_TOLERANCE (10)
 
 /**************************** Type Definitions *******************************/
 
@@ -163,6 +161,8 @@ static XUartLite 	sUartLite;
 static XGpio     	sGpio;
 static VideoCapture	sVideoCapt;
 
+static int sDebugOutputEnabled = 1;
+
 // static variables storing information about what sounds are available, and
 // where they are stored on the SD card.
 
@@ -178,11 +178,11 @@ static u32 *sSdFileMemTip;
 
 volatile static enum {
     DEFAULT_LOOP = 0,
-                 MANUAL_MODE,
-                 AUTOMATIC_MODE,
-                 LASER_TEST,
-                 MOTOR_TEST,
-                 IP_TEST,
+    MANUAL_MODE,
+    AUTOMATIC_MODE,
+    LASER_TEST,
+    MOTOR_TEST,
+    IP_TEST,
 } sLoopSelect;
 
 
@@ -275,7 +275,7 @@ void loadFileIntoMemory(FileIndex fileIndex, char *name) {
 void loadSounds(void) {
     loadFileIntoMemory(FILE_ID_MACHINE_GUN, GUN_PATH);
     loadFileIntoMemory(FILE_ID_PORTAL_GUN, PORTAL_GUN_PATH);
-    //loadSongIntoMemory(FILE_ID_TARGET_ACQUIRED, TARGET_PATH);
+    loadFileIntoMemory(FILE_ID_TARGET_ACQUIRED, TARGET_PATH);
     //loadSongIntoMemory(SOUND_ID_STILL_ALIVE, SONG_PATH);
 }
 
@@ -325,7 +325,23 @@ void playTargetAcquired(void) {
     }
 }
 
+static void setDummyTarget(void) {
+    int x, y;
+    char buf[50];
 
+    consume_uart_arg("x", buf, 50);
+    if (!get_int_from_string(buf, &x)) {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+        return;
+    }
+    consume_uart_arg("y", buf, 50);
+    if (!get_int_from_string(buf, &y)) {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+        return;
+    }
+
+    generate_debug_target(x,y);
+}
 
 static void passthroughHdmi(void) {
     if (XST_SUCCESS != video_set_output_resolution(RES_720P)) {
@@ -366,18 +382,19 @@ static void vf2(void) {
 }
 
 
-static void r720p(void) {
-    video_set_output_resolution(RES_720P);
+static void toggle_ip_output(void) {
+    sDebugOutputEnabled = !sDebugOutputEnabled;
 }
 
 
 static void runImageProcessing(void) {
     video_set_input_enabled(0);
-    targeting_begin_transfer(&sAxiTargetingDma);
+    targeting_begin_transfer(&sAxiTargetingDma, sDebugOutputEnabled);
     while(ip_busy()) MB_Sleep(200);
 
     TargetingState state = get_targeting_state();
     draw_dot(state.laser.x, state.laser.y, COLOUR_RED);
+    draw_dot(state.target.x, state.target.y, COLOUR_BLUE);
     video_set_input_enabled(1);
 }
 
@@ -542,7 +559,8 @@ int main(void)
     register_uart_response("vf2",         vf2);
     register_uart_response("vf0",         vf0);
     register_uart_response("ipinfo",      print_ip_info);
-    register_uart_response("720p",        r720p);
+    register_uart_response("ipouttoggle", toggle_ip_output);
+    register_uart_response("dummytarget", setDummyTarget);
 
     register_uart_response("lemon",       DisplayLemon);
     register_uart_response("heman",       DisplayHeman);
@@ -763,6 +781,8 @@ static void AutoMainLoop(void) {
     SetTiltAngle(0);
     SetPanAngle(0);
 
+    int acquired = 0;
+
     continueTest = true;
     xil_printf("Entering auto mode.\r\n");
     while(continueTest) {
@@ -772,11 +792,14 @@ static void AutoMainLoop(void) {
         xil_printf("Targeting state: Laser = (%d,%d); Obj = (%d, %d)\n\r",
                 state.laser.x, state.laser.y, state.target.x, state.target.y);
 
+        int target_x = state.target.x;
+        int target_y = state.target.y;
+
         // Get the diffs in both dimensions.
         //x_diff = X_MIDDLE;
         //y_diff = Y_MIDDLE;
-        x_diff = -(X_MIDDLE - state.laser.x);
-        y_diff = (state.laser.y - Y_MIDDLE);
+        x_diff = (target_x - state.laser.x);
+        y_diff = (state.laser.y - target_y);
 
         // Determine how much to adjust the angles.
         x_adj = (x_diff > 0) ? x_diff : -x_diff;
@@ -798,27 +821,40 @@ static void AutoMainLoop(void) {
         }
 
         // Adjust laser position to correct for these diffs.
-        if (x_diff > 0) {
-            xil_printf("Need to move laser right\r\n");
+        if (x_diff > LASER_TOLERANCE) {
+            xil_printf("Need to move laser right by %d deg\r\n", x_adj);
             PanRight(x_adj);
-        } else if (x_diff < 0) {
-            xil_printf("Need to move laser left\r\n");
+        } else if (x_diff < -LASER_TOLERANCE) {
+            xil_printf("Need to move laser left by %d deg\r\n", x_adj);
             PanLeft(x_adj);
         } else {
             xil_printf("X location on target!\r\n");
         }
 
-        if (y_diff > 0) {
-            xil_printf("Need to move laser up\r\n");
+        if (y_diff > LASER_TOLERANCE) {
+            xil_printf("Need to move laser up by %d deg\r\n", y_adj);
             TiltUp(y_adj);
-        } else if (y_diff < 0) {
-            xil_printf("Need to move laser down\r\n");
+        } else if (y_diff < -LASER_TOLERANCE) {
+            xil_printf("Need to move laser down by %d deg\r\n", y_adj);
             TiltDown(y_adj);
         } else {
             xil_printf("Y location on target!\r\n");
         }
 
-        MB_Sleep(1000);
+        if (x_diff <= LASER_TOLERANCE && x_diff >= -LASER_TOLERANCE &&
+                y_diff <= LASER_TOLERANCE && y_diff >= -LASER_TOLERANCE) {
+            if (acquired) {
+                playGunSound();
+            } else {
+                playTargetAcquired();
+                acquired = 1;
+            }
+        } else {
+            acquired = 0;
+        }
+
+        int sleep_interval = sDebugOutputEnabled ? 3000 : 500;
+        MB_Sleep(sleep_interval);
     }
     SetTiltAngle(0);
     SetPanAngle(0);
@@ -901,9 +937,11 @@ static void DisplayLemon(void) {
         video_set_input_enabled(0);
         memcpy(buff, file->baseAddr, file->length);
 
-        targeting_begin_transfer(&sAxiTargetingDma);
+        targeting_begin_transfer(&sAxiTargetingDma, 1);
         MB_Sleep(3000);
         video_set_input_enabled(1);
+    } else {
+        print("File not loaded; can't diplay!");
     }
 }
 
@@ -916,9 +954,11 @@ static void DisplayHeman(void) {
         video_set_input_enabled(0);
         memcpy(buff, file->baseAddr, file->length);
 
-        targeting_begin_transfer(&sAxiTargetingDma);
+        targeting_begin_transfer(&sAxiTargetingDma, 1);
         MB_Sleep(3000);
         video_set_input_enabled(1);
+    } else {
+        print("File not loaded; can't diplay!");
     }
 }
 

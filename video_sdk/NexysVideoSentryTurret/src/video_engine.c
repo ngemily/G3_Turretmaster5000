@@ -79,7 +79,6 @@ XStatus initialize_video(VideoCapture *videoPtr, XIntc *intcPtr)
     for (i = 0; i < NUM_FRAME_BUFFER; i++)
     {
         pFrames[i] = frameBuf + (i*FRAME_BUFFER_SIZE);
-        xil_printf("pFrames[%d]: %08x\n\r", i, pFrames[i]);
     }
 
     /*

@@ -16,9 +16,14 @@
 #include "demo.h"
 
 #define IMAGE_PROC_BASE_ADDR (XPAR_IMAGE_PROCESSING_IP_0_S_AXI_LITE_BASEADDR)
+#define X_MIDDLE (639)
+#define Y_MIDDLE (359)
 
 static XAxiVdma *vdmaPtr;
 volatile TargetingIPStatus *targetingIp = (TargetingIPStatus *)IMAGE_PROC_BASE_ADDR;
+
+static int dbgTargetX = X_MIDDLE;
+static int dbgTargetY = Y_MIDDLE;
 
 XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
     int status = XST_SUCCESS;
@@ -47,19 +52,24 @@ XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
     return status;
 }
 
-XStatus targeting_begin_transfer(XAxiVdma *dmaPtr) {
+XStatus targeting_begin_transfer(XAxiVdma *dmaPtr, int outputEnable) {
     targetingIp->reset = 1;
     targetingIp->reset = 0;
-    return fnStartTargetingDmaInOut(dmaPtr, 0, 1);
+    return fnStartTargetingDmaInOut(dmaPtr, 0, 1, outputEnable);
+}
+
+void generate_debug_target(int x, int y) {
+    dbgTargetX = x;
+    dbgTargetY = y;
 }
 
 TargetingState get_targeting_state(void) {
     TargetingState state;
     //while (!targetingIp->dataValid);
-    state.laser.x = targetingIp->laserLocation.x;
-    state.laser.y = targetingIp->laserLocation.y;
-    state.target.x = 0; // TODO
-    state.target.y = 0; // TODO
+    state.laser.x  = targetingIp->laserLocation.x;
+    state.laser.y  = targetingIp->laserLocation.y;
+    state.target.x = dbgTargetX; // TODO
+    state.target.y = dbgTargetY; // TODO
     return state;
 }
 
@@ -73,24 +83,24 @@ void print_ip_info(void) {
     XAxiVdma_DmaRegisterDump(vdmaPtr, XAXIVDMA_WRITE);
     volatile TargetingIPStatus *ipStatus = (TargetingIPStatus *) IMAGE_PROC_BASE_ADDR;
 
-    xil_printf("rx_fsm_state = %08x\n\r", ipStatus->rx_fsm_state);
-    xil_printf("tx_fsm_state = %08x\n\r", ipStatus->tx_fsm_state);
-    xil_printf("rx_write_ptr = %08x\n\r", ipStatus->rx_write_ptr);
-    xil_printf("rx_read_ptr  = %08x\n\r", ipStatus->rx_read_ptr);
-    xil_printf("tx_write_ptr = %08x\n\r", ipStatus->tx_write_ptr);
-    xil_printf("tx_read_ptr  = %08x\n\r", ipStatus->tx_read_ptr);
-    xil_printf("rx_fifo_tracker = %08x\n\r", ipStatus->rx_fifo_tracker);
-    xil_printf("tx_fifo_tracker  = %08x\n\r", ipStatus->tx_fifo_tracker);
-    xil_printf("MM2S_Ready   = %08x\n\r", ipStatus->MM2S_ready);
-    xil_printf("MM2S_Valid   = %08x\n\r", ipStatus->MM2S_valid);
-    xil_printf("S2MM_Valid   = %08x\n\r", ipStatus->S2MM_valid);
-    xil_printf("S2MM_Ready   = %08x\n\r", ipStatus->S2MM_ready);
-    xil_printf("flood threshold = %08x\n\r", ipStatus->flood_threshold);
-    xil_printf("sobel threshold = %08x\n\r", ipStatus->sobel_threshold);
-    xil_printf("red_threshold = %08x\n\r", ipStatus->red_threshold);
-    xil_printf("mode         = %08x\n\r", ipStatus->mode);
-    xil_printf("reset        = %08x\n\r", ipStatus->reset);
-    xil_printf("laser        = (%d, %d)\n\r", ipStatus->laserLocation.x, ipStatus->laserLocation.y);
+    xil_printf("  rx_fsm_state    = %08x\n\r", ipStatus->rx_fsm_state);
+    xil_printf("  tx_fsm_state    = %08x\n\r", ipStatus->tx_fsm_state);
+    xil_printf("  rx_write_ptr    = %08x\n\r", ipStatus->rx_write_ptr);
+    xil_printf("  rx_read_ptr     = %08x\n\r", ipStatus->rx_read_ptr);
+    xil_printf("  tx_write_ptr    = %08x\n\r", ipStatus->tx_write_ptr);
+    xil_printf("  tx_read_ptr     = %08x\n\r", ipStatus->tx_read_ptr);
+    xil_printf("  rx_fifo_tracker = %08x\n\r", ipStatus->rx_fifo_tracker);
+    xil_printf("  tx_fifo_tracker = %08x\n\r", ipStatus->tx_fifo_tracker);
+    xil_printf("  MM2S_Ready      = %08x\n\r", ipStatus->MM2S_ready);
+    xil_printf("  MM2S_Valid      = %08x\n\r", ipStatus->MM2S_valid);
+    xil_printf("  S2MM_Valid      = %08x\n\r", ipStatus->S2MM_valid);
+    xil_printf("  S2MM_Ready      = %08x\n\r", ipStatus->S2MM_ready);
+    xil_printf("  flood threshold = %08x\n\r", ipStatus->flood_threshold);
+    xil_printf("  sobel threshold = %08x\n\r", ipStatus->sobel_threshold);
+    xil_printf("  red_threshold   = %08x\n\r", ipStatus->red_threshold);
+    xil_printf("  mode            = %08x\n\r", ipStatus->mode);
+    xil_printf("  reset           = %08x\n\r", ipStatus->reset);
+    xil_printf("  laser           = (%d, %d)\n\r", ipStatus->laserLocation.x, ipStatus->laserLocation.y);
 }
 
 
@@ -106,20 +116,20 @@ XStatus draw_dot(int x, int y, colour_t colour) {
     int xo, yo;
     for (yo=-1; yo<=1; yo++) {
         for (xo=-1; xo<=1; xo++) {
-            *(frame + (y+yo)*stride + (x+xo)*3)     = 0xFF;
-            *(frame + (y+yo)*stride + (x+xo)*3 + 1) = 0x00;
-            *(frame + (y+yo)*stride + (x+xo)*3 + 2) = 0x00;
+            *(frame + (y+yo)*stride + (x+xo)*3)     = colour.green;
+            *(frame + (y+yo)*stride + (x+xo)*3 + 1) = colour.blue;
+            *(frame + (y+yo)*stride + (x+xo)*3 + 2) = colour.red;
         }
     }
     for (xo=-3; xo<=3; xo++) {
-        *(frame + (y)*stride + (x+xo)*3)     = 0xFF;
-        *(frame + (y)*stride + (x+xo)*3 + 1) = 0x00;
-        *(frame + (y)*stride + (x+xo)*3 + 2) = 0x00;
+        *(frame + (y)*stride + (x+xo)*3)     = colour.green;;
+        *(frame + (y)*stride + (x+xo)*3 + 1) = colour.blue;
+        *(frame + (y)*stride + (x+xo)*3 + 2) = colour.red;
     }
     for (yo=-3; yo<=3; yo++) {
-        *(frame + (y+yo)*stride + (x)*3)     = 0xFF;
-        *(frame + (y+yo)*stride + (x)*3 + 1) = 0x00;
-        *(frame + (y+yo)*stride + (x)*3 + 2) = 0x00;
+        *(frame + (y+yo)*stride + (x)*3)     = colour.green;;
+        *(frame + (y+yo)*stride + (x)*3 + 1) = colour.blue;
+        *(frame + (y+yo)*stride + (x)*3 + 2) = colour.red;
     }
 
    return XST_SUCCESS;
