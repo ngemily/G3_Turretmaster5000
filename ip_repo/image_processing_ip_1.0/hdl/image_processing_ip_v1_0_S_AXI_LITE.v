@@ -716,7 +716,7 @@
 
     top core(
         .clk(S_AXI_ACLK),
-        .reset_n(S_AXI_ARESETN),
+        .reset_n(AXIS_FRAME_RESETN),
         .en(core_en),
         .x(pixel_col),
         .y(pixel_row),
