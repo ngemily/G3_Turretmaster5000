@@ -606,10 +606,10 @@
             5'h0D   : reg_data_out <= slv_reg13;   // input: frame resetn
             5'h0E   : reg_data_out <= laser_xy; 
             5'h0F   : reg_data_out <= slv_reg15;    // input: 2nd ctrl reg
-            5'h10   : reg_data_out <= {obj_x, obj_y};
-            5'h11   : reg_data_out <= num_labels;
-            5'h12   : reg_data_out <= slv_reg18;
-            5'h13   : reg_data_out <= slv_reg19;
+            5'h10   : reg_data_out <= num_labels;
+            5'h11   : reg_data_out <= obj_area;
+            5'h12   : reg_data_out <= obj_x;
+            5'h13   : reg_data_out <= obj_y;
             5'h14   : reg_data_out <= slv_reg20;
             5'h15   : reg_data_out <= slv_reg21;
             5'h16   : reg_data_out <= slv_reg22;
@@ -655,8 +655,9 @@
     reg [15:0] pixel_row;
     reg [15:0] pixel_col;
     wire [31:0] laser_xy;
-    wire [15:0] obj_x;
-    wire [15:0] obj_y;
+    wire [23:0] obj_area;
+    wire [23:0] obj_x;
+    wire [23:0] obj_y;
     wire [7:0] num_labels;
 
     reg [line_bits-1:0] rx_read_pointer;                         // rx FIFO write pointer
@@ -725,6 +726,7 @@
         .flood_threshold(flood_threshold),
         .obj_id(obj_id),
         .out(stream_from_detectinator), // [`PIXEL_SIZE - 1:0] out
+        .obj_area(obj_area),
         .obj_x(obj_x),
         .obj_y(obj_y),
         .num_labels(num_labels)
