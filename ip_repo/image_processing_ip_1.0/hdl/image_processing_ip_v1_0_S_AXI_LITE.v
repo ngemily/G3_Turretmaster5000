@@ -268,7 +268,7 @@
           slv_reg9 <= 0;
           slv_reg10 <= 0;
           slv_reg11 <= 0;
-          slv_reg12 <= {8'd1, 8'd0, 8'd50, 8'd1};
+          slv_reg12 <= {8'd1, 8'd40, 8'd50, 8'd1};
           slv_reg13 <= 0;
           slv_reg14 <= 0;
           slv_reg15 <= 0;
