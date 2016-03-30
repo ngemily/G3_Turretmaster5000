@@ -667,15 +667,16 @@
     // +-----------------+---------------+-----------------+------+
     // | flood_threshold | red_threshold | sobel_threshold | mode |
     // +-----------------+---------------+-----------------+------+
-    wire [`WORD_SIZE - 1:0] flood_threshold = ctrl[`WORD_SIZE * 4 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] red_threshold   = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] sobel_threshold = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] mode            = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] flood1_threshold = ctrl[`WORD_SIZE * 4 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] red_threshold    = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] sobel_threshold  = ctrl[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] mode             = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
     // 2nd ctrl register layout: (by byte)
     // +----------+----------+----------+--------+
     // | reserved | reserved | reserved | obj_id |
     // +----------+----------+----------+--------+
+    wire [`WORD_SIZE - 1:0] flood2_threshold = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
     wire [`WORD_SIZE - 1:0] throughput_mode = ctrl2[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
     wire [`WORD_SIZE - 1:0] obj_id          = ctrl2[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
@@ -723,7 +724,8 @@
         .data(stream_to_core), // [`PIXEL_SIZE - 1:0] data,
         .mode(mode),
         .sobel_threshold(sobel_threshold),
-        .flood_threshold(flood_threshold),
+        .flood1_threshold(flood1_threshold),
+        .flood2_threshold(flood2_threshold),
         .obj_id(obj_id),
         .out(stream_from_detectinator), // [`PIXEL_SIZE - 1:0] out
         .obj_area(obj_area),
