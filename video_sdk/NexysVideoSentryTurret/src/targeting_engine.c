@@ -68,8 +68,8 @@ TargetingState get_targeting_state(void) {
     //while (!targetingIp->dataValid);
     state.laser.x  = targetingIp->laserLocation.x;
     state.laser.y  = targetingIp->laserLocation.y;
-    state.target.x = targetingIp->obj_y / targetingIp->obj_area; // TODO
-    state.target.y = targetingIp->obj_x / targetingIp->obj_area; // TODO
+    state.target.x = targetingIp->obj_y / targetingIp->obj_area;
+    state.target.y = targetingIp->obj_x / targetingIp->obj_area;
     return state;
 }
 

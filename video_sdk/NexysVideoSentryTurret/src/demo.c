@@ -394,7 +394,12 @@ static void runImageProcessing(void) {
 
     TargetingState state = get_targeting_state();
     draw_dot(state.laser.x, state.laser.y, COLOUR_RED);
-    draw_dot(state.target.x, state.target.y, COLOUR_BLUE);
+    int i;
+    for (i=0; i<256; i++) {
+        SetObjIdValue(i);
+        TargetingState state = get_targeting_state();
+        draw_dot(state.target.x, state.target.y, COLOUR_BLUE);
+    }
     video_set_input_enabled(1);
 }
 

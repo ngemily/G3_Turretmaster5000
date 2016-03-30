@@ -44,5 +44,6 @@ void SetThresholdValue(int threshold);
 void SetFloodThresholdValue(int threshold);
 void SetSobelThresholdValue(int threshold);
 void SetRedThresholdValue(int threshold);
+void SetObjIdValue(int id);
 
 #endif /* TARGETING_ENGINE_H_ */
