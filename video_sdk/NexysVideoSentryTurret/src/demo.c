@@ -110,7 +110,7 @@
 #define BUTTON_RIGHT (0x8)
 #define BUTTON_DOWN (0x10)
 
-#define LASER_TOLERANCE (10)
+#define LASER_TOLERANCE (30)
 
 /**************************** Type Definitions *******************************/
 
@@ -162,6 +162,7 @@ static XGpio     	sGpio;
 static VideoCapture	sVideoCapt;
 
 static int sDebugOutputEnabled = 1;
+static int sMinObjSize = 1000;
 
 // static variables storing information about what sounds are available, and
 // where they are stored on the SD card.
@@ -395,10 +396,12 @@ static void runImageProcessing(void) {
     TargetingState state = get_targeting_state();
     draw_dot(state.laser.x, state.laser.y, COLOUR_RED);
     int i;
-    for (i=0; i<256; i++) {
+    for (i=0; i<state.num_targets; i++) {
         SetObjIdValue(i);
         TargetingState state = get_targeting_state();
-        draw_dot(state.target.x, state.target.y, COLOUR_BLUE);
+        if (state.target_size > sMinObjSize) {
+            draw_dot(state.target_loc.x, state.target_loc.y, COLOUR_BLUE);
+        }
     }
     video_set_input_enabled(1);
 }
@@ -438,8 +441,12 @@ static void SetLaserMode(void) {
     SetOutputMode(6);
 }
 
-static void SetFloodMode(void) {
+static void SetFlood1Mode(void) {
     SetOutputMode(7);
+}
+
+static void SetFlood2Mode(void) {
+    SetOutputMode(8);
 }
 
 static void SetSobelThreshold(void) {
@@ -454,18 +461,41 @@ static void SetSobelThreshold(void) {
     }
 }
 
-static void SetFloodThreshold(void) {
+static void SetFlood1Threshold(void) {
     char buf[50];
     int result;
 
     consume_uart_arg("flood thresh [0-15]:", buf, 50);
     if (get_int_from_string(buf, &result)) {
-        SetFloodThresholdValue(result);
+        SetFlood1ThresholdValue(result);
     } else {
         xil_printf("Not a valid integer: %s\r\n", buf);
     }
 }
 
+static void SetSizeThreshold(void) {
+    char buf[50];
+    int result;
+
+    consume_uart_arg("size threshold:", buf, 50);
+    if (get_int_from_string(buf, &result)) {
+        sMinObjSize = result;
+    } else {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+    }
+}
+
+static void SetFlood2Threshold(void) {
+    char buf[50];
+    int result;
+
+    consume_uart_arg("flood thresh [0-15]:", buf, 50);
+    if (get_int_from_string(buf, &result)) {
+        SetFlood2ThresholdValue(result);
+    } else {
+        xil_printf("Not a valid integer: %s\r\n", buf);
+    }
+}
 
 static void SetRedThreshold(void) {
     char buf[50];
@@ -490,6 +520,14 @@ static void SetObjId(void) {
         xil_printf("Not a valid integer: %s\r\n", buf);
     }
 }
+
+void initialSetup(void) {
+    SetFlood1ThresholdValue(2);
+    SetFlood2ThresholdValue(7);
+    SetSobelThresholdValue(125);
+    SetRedThresholdValue(15);
+}
+
 
 /*****************************************************************************/
 /**
@@ -588,14 +626,18 @@ int main(void)
     register_uart_response("label",        SetLabelMode);
     register_uart_response("colour",        SetColourMode);
     register_uart_response("laser",        SetLaserMode);
-    register_uart_response("flood",        SetFloodMode);
+    register_uart_response("flood1",        SetFlood1Mode);
+    register_uart_response("flood2",        SetFlood2Mode);
 
     register_uart_response("laseron",        LaserOn);
     register_uart_response("laseroff",        LaserOff);
 
     register_uart_response("redthresh",        SetRedThreshold);
     register_uart_response("setsobelthresh",   SetSobelThreshold);
-    register_uart_response("setfloodthresh",   SetFloodThreshold);
+    register_uart_response("setflood1thresh",   SetFlood1Threshold);
+    register_uart_response("setflood2thresh",   SetFlood2Threshold);
+    register_uart_response("setminsize",   SetSizeThreshold);
+
 
     register_uart_response("setobjid",   SetObjId);
 
@@ -603,6 +645,7 @@ int main(void)
 
     xil_printf("\r\n--- Done registering UART commands --- \r\n");
 
+    initialSetup();
     xil_printf(PROMPT_STRING);
     while (do_run) {
         switch (sLoopSelect) {
@@ -807,12 +850,30 @@ static void AutoMainLoop(void) {
     while(continueTest) {
         runImageProcessing();
 
+        SetObjIdValue(1);
         TargetingState state = get_targeting_state();
-        xil_printf("Targeting state: Laser = (%d,%d); Obj = (%d, %d)\n\r",
-                state.laser.x, state.laser.y, state.target.x, state.target.y);
+        int target_x = state.target_loc.x;
+        int target_y = state.target_loc.y;
+        u32 target_size = state.target_size;
 
-        int target_x = state.target.x;
-        int target_y = state.target.y;
+        int i;
+        for (i=1; i<state.num_targets; i++) {
+            SetObjIdValue(i);
+            state = get_targeting_state();
+            if (target_size < state.target_size &&
+                    state.target_loc.x > 200  &&
+                    state.target_loc.x < 1080 &&
+                    state.target_loc.y > 20   &&
+                    state.target_loc.y < 700) { // TODO: remove hack
+                target_x = state.target_loc.x;
+                target_y = state.target_loc.y;
+                target_size = state.target_size;
+            }
+        }
+
+        draw_dot(target_x, target_y, COLOUR_GREEN);
+        xil_printf("Targeting state: Laser = (%d,%d); Obj = (%d, %d) [sz=%d]\n\r",
+                        state.laser.x, state.laser.y, target_x, target_y, target_size);
 
         // Get the diffs in both dimensions.
         //x_diff = X_MIDDLE;

@@ -37,12 +37,12 @@ typedef struct {
     u8 mode;
     u8 sobel_threshold;
     u8 red_threshold;
-    u8 flood_threshold;
+    u8 flood1_threshold;
     u32 reset;
     TargetLocation laserLocation;
-    u8 obj_id;
+    u16 obj_id;
     u8 input_only;
-    u16 reserved;
+    u8 flood2_threshold;
     u32 num_objs;
     u32 obj_area;
     u32 obj_x;

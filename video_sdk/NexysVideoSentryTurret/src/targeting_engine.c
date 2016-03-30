@@ -68,8 +68,10 @@ TargetingState get_targeting_state(void) {
     //while (!targetingIp->dataValid);
     state.laser.x  = targetingIp->laserLocation.x;
     state.laser.y  = targetingIp->laserLocation.y;
-    state.target.x = targetingIp->obj_y / targetingIp->obj_area;
-    state.target.y = targetingIp->obj_x / targetingIp->obj_area;
+    state.target_loc.x = targetingIp->obj_y / targetingIp->obj_area;
+    state.target_loc.y = targetingIp->obj_x / targetingIp->obj_area;
+    state.target_size = targetingIp->obj_area;
+    state.num_targets = targetingIp->num_objs;
     return state;
 }
 
@@ -95,7 +97,8 @@ void print_ip_info(void) {
     xil_printf("  MM2S_Valid      = %08x\n\r", ipStatus->MM2S_valid);
     xil_printf("  S2MM_Valid      = %08x\n\r", ipStatus->S2MM_valid);
     xil_printf("  S2MM_Ready      = %08x\n\r", ipStatus->S2MM_ready);
-    xil_printf("  flood threshold = %08x\n\r", ipStatus->flood_threshold);
+    xil_printf("  flood1 threshold = %08x\n\r", ipStatus->flood1_threshold);
+    xil_printf("  flood2 threshold = %08x\n\r", ipStatus->flood2_threshold);
     xil_printf("  sobel threshold = %08x\n\r", ipStatus->sobel_threshold);
     xil_printf("  red_threshold   = %08x\n\r", ipStatus->red_threshold);
     xil_printf("  mode            = %08x\n\r", ipStatus->mode);
@@ -138,8 +141,11 @@ XStatus draw_dot(int x, int y, colour_t colour) {
    return XST_SUCCESS;
 }
 
-void SetFloodThresholdValue(int threshold) {
-    targetingIp->flood_threshold = threshold;
+void SetFlood1ThresholdValue(int threshold) {
+    targetingIp->flood1_threshold = threshold;
+}
+void SetFlood2ThresholdValue(int threshold) {
+    targetingIp->flood2_threshold = threshold;
 }
 void SetSobelThresholdValue(int threshold) {
     targetingIp->sobel_threshold = threshold;

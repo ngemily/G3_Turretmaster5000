@@ -19,7 +19,9 @@ typedef struct {
 
 typedef struct {
     location_t laser;
-    location_t target;
+    location_t target_loc;
+    u32        target_size;
+    u32        num_targets;
 } TargetingState;
 
 typedef struct {
@@ -29,6 +31,7 @@ typedef struct {
 } colour_t;
 
 static const colour_t COLOUR_RED  = {0xFF, 0x00, 0x00};
+static const colour_t COLOUR_GREEN = {0x00, 0xFF, 0x00};
 static const colour_t COLOUR_BLUE = {0x00, 0x00, 0xFF};
 
 XStatus        initialize_targeting(XAxiVdma *targetingDmaPtr);
