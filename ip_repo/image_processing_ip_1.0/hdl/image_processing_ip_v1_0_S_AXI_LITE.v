@@ -658,7 +658,7 @@
     wire [23:0] obj_area;
     wire [23:0] obj_x;
     wire [23:0] obj_y;
-    wire [7:0] num_labels;
+    wire [`LBL_WIDTH - 1:0] num_labels;
 
     reg [line_bits-1:0] rx_read_pointer;                         // rx FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer;                        // tx FIFO write pointer
@@ -673,12 +673,12 @@
     wire [`WORD_SIZE - 1:0] mode             = ctrl[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
 
     // 2nd ctrl register layout: (by byte)
-    // +----------+----------+----------+--------+
-    // | reserved | reserved | reserved | obj_id |
-    // +----------+----------+----------+--------+
-    wire [`WORD_SIZE - 1:0] flood2_threshold = ctrl[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] throughput_mode = ctrl2[`WORD_SIZE * 2 - 1 -: `WORD_SIZE];
-    wire [`WORD_SIZE - 1:0] obj_id          = ctrl2[`WORD_SIZE * 1 - 1 -: `WORD_SIZE];
+    // +------------------+-----------------+--------+
+    // | flood2_threshold | throughput_mode | obj_id |
+    // +------------------+-----------------+--------+
+    wire [`WORD_SIZE - 1:0] flood2_threshold = ctrl2[`WORD_SIZE * 4 - 1 -: `WORD_SIZE];
+    wire [`WORD_SIZE - 1:0] throughput_mode  = ctrl2[`WORD_SIZE * 3 - 1 -: `WORD_SIZE];
+    wire [`LBL_WIDTH - 1:0] obj_id           = ctrl2[`LBL_WIDTH - 1:0];
 
     assign AXIS_FRAME_RESETN = !slv_reg13;
     assign core_en = (rx_fifo_track > 0) && (tx_fifo_track < FIFO_SIZE);
