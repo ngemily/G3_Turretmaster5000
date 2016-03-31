@@ -590,9 +590,9 @@
     begin
           // Address decoding for reading registers
           case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-            5'h00   : reg_data_out <= rx_mst_exec_state;
-            5'h01   : reg_data_out <= tx_mst_exec_state;
-            5'h02   : reg_data_out <= rx_write_pointer;
+            5'h00   : reg_data_out <= obj_m11;
+            5'h01   : reg_data_out <= obj_m12;
+            5'h02   : reg_data_out <= obj_m21;
             5'h03   : reg_data_out <= rx_read_pointer;
             5'h04   : reg_data_out <= tx_write_pointer;
             5'h05   : reg_data_out <= tx_read_pointer;
@@ -610,10 +610,10 @@
             5'h11   : reg_data_out <= obj_area;
             5'h12   : reg_data_out <= obj_x;
             5'h13   : reg_data_out <= obj_y;
-            5'h14   : reg_data_out <= slv_reg20;
-            5'h15   : reg_data_out <= slv_reg21;
-            5'h16   : reg_data_out <= slv_reg22;
-            5'h17   : reg_data_out <= slv_reg23;
+            5'h14   : reg_data_out <= obj_m20;
+            5'h15   : reg_data_out <= obj_m02;
+            5'h16   : reg_data_out <= obj_m30;
+            5'h17   : reg_data_out <= obj_m03;
             default : reg_data_out <= 0;
           endcase
     end
@@ -655,10 +655,17 @@
     reg [15:0] pixel_row;
     reg [15:0] pixel_col;
     wire [31:0] laser_xy;
-    wire [23:0] obj_area;
-    wire [23:0] obj_x;
-    wire [23:0] obj_y;
     wire [`LBL_WIDTH - 1:0] num_labels;
+    wire [`LOC_SIZE - 1:0] obj_area;
+    wire [`LOC_SIZE - 1:0] obj_x;
+    wire [`LOC_SIZE - 1:0] obj_y;
+    wire [`LOC_SIZE - 1:0] obj_m02;
+    wire [`LOC_SIZE - 1:0] obj_m11;
+    wire [`LOC_SIZE - 1:0] obj_m20;
+    wire [`LOC_SIZE - 1:0] obj_m30;
+    wire [`LOC_SIZE - 1:0] obj_m21;
+    wire [`LOC_SIZE - 1:0] obj_m12;
+    wire [`LOC_SIZE - 1:0] obj_m03;
 
     reg [line_bits-1:0] rx_read_pointer;                         // rx FIFO write pointer
     reg [line_bits-1:0] tx_write_pointer;                        // tx FIFO write pointer
@@ -728,10 +735,17 @@
         .flood2_threshold(flood2_threshold),
         .obj_id(obj_id),
         .out(stream_from_detectinator), // [`PIXEL_SIZE - 1:0] out
+        .num_labels(num_labels),
         .obj_area(obj_area),
         .obj_x(obj_x),
         .obj_y(obj_y),
-        .num_labels(num_labels)
+        .obj_m02(obj_m02),
+        .obj_m11(obj_m11),
+        .obj_m20(obj_m20),
+        .obj_m30(obj_m30),
+        .obj_m21(obj_m21),
+        .obj_m12(obj_m12),
+        .obj_m03(obj_m03)
     );
     
     lazer_lazer get_lazed(
