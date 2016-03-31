@@ -648,7 +648,6 @@
     wire [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator;
     reg [AXIS_TDATA_WIDTH-1:0] stream_from_detectinator_reg;
 
-    wire [7:0] throughput_mode;
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl2      = slv_reg15;
