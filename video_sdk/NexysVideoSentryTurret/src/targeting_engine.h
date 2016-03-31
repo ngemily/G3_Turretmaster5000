@@ -21,7 +21,6 @@ typedef struct {
     location_t laser;
     location_t target_loc;
     u32        target_size;
-    u32        num_targets;
 } TargetingState;
 
 typedef struct {

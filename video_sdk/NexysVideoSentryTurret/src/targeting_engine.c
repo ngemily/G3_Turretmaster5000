@@ -18,12 +18,15 @@
 #define IMAGE_PROC_BASE_ADDR (XPAR_IMAGE_PROCESSING_IP_0_S_AXI_LITE_BASEADDR)
 #define X_MIDDLE (639)
 #define Y_MIDDLE (359)
+#define MAX_OBJECT_SIZE (100000)
 
 static XAxiVdma *vdmaPtr;
 volatile TargetingIPStatus *targetingIp = (TargetingIPStatus *)IMAGE_PROC_BASE_ADDR;
 
 static int dbgTargetX = X_MIDDLE;
 static int dbgTargetY = Y_MIDDLE;
+
+int sMinObjSize = 1000;
 
 XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
     int status = XST_SUCCESS;
@@ -53,6 +56,7 @@ XStatus initialize_targeting(XAxiVdma *targetingDmaPtr) {
 }
 
 XStatus targeting_begin_transfer(XAxiVdma *dmaPtr, int outputEnable) {
+    targetingIp->input_only = !outputEnable;
     targetingIp->reset = 1;
     targetingIp->reset = 0;
     return fnStartTargetingDmaInOut(dmaPtr, 0, 1, outputEnable);
@@ -63,15 +67,41 @@ void generate_debug_target(int x, int y) {
     dbgTargetY = y;
 }
 
+void draw_debug_dots(void) {
+    int i;
+    draw_dot(targetingIp->laserLocation.x, targetingIp->laserLocation.y, COLOUR_RED);
+    for (i=1; i<targetingIp->num_objs; i++) {
+        targetingIp->obj_id = i;
+        if (targetingIp->obj_area > sMinObjSize) {
+            u32 x = targetingIp->obj_x / targetingIp->obj_area;
+            u32 y = targetingIp->obj_y / targetingIp->obj_area;
+            draw_dot(x, y, COLOUR_BLUE);
+        }
+    }
+}
+
 TargetingState get_targeting_state(void) {
     TargetingState state;
     //while (!targetingIp->dataValid);
     state.laser.x  = targetingIp->laserLocation.x;
     state.laser.y  = targetingIp->laserLocation.y;
-    state.target_loc.x = targetingIp->obj_y / targetingIp->obj_area;
-    state.target_loc.y = targetingIp->obj_x / targetingIp->obj_area;
+
+    targetingIp->obj_id = 1;
+    u32 max_size = targetingIp->obj_area;
+    int target_idx = 1;
+    int i;
+    for (i=2; i<targetingIp->num_objs; i++) {
+        targetingIp->obj_id = i;
+        if (targetingIp->obj_area > max_size &&
+                targetingIp->obj_area < MAX_OBJECT_SIZE) {
+            max_size = targetingIp->obj_area;
+            target_idx = i;
+        }
+    }
+    targetingIp->obj_id = target_idx;
+    state.target_loc.x = targetingIp->obj_x / targetingIp->obj_area;
+    state.target_loc.y = targetingIp->obj_y / targetingIp->obj_area;
     state.target_size = targetingIp->obj_area;
-    state.num_targets = targetingIp->num_objs;
     return state;
 }
 
@@ -155,4 +185,8 @@ void SetRedThresholdValue(int threshold) {
 }
 void SetObjIdValue(int id) {
     targetingIp->obj_id = id;
+}
+
+void setMinObjSize(int size) {
+    sMinObjSize = size;
 }

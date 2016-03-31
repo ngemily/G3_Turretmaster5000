@@ -162,7 +162,6 @@ static XGpio     	sGpio;
 static VideoCapture	sVideoCapt;
 
 static int sDebugOutputEnabled = 1;
-static int sMinObjSize = 1000;
 
 // static variables storing information about what sounds are available, and
 // where they are stored on the SD card.
@@ -385,24 +384,19 @@ static void vf2(void) {
 
 static void toggle_ip_output(void) {
     sDebugOutputEnabled = !sDebugOutputEnabled;
+    video_set_output_enabled(sDebugOutputEnabled);
 }
 
 
 static void runImageProcessing(void) {
+    //video_set_input_frame(2);
     video_set_input_enabled(0);
     targeting_begin_transfer(&sAxiTargetingDma, sDebugOutputEnabled);
     while(ip_busy()) MB_Sleep(200);
 
-    TargetingState state = get_targeting_state();
-    draw_dot(state.laser.x, state.laser.y, COLOUR_RED);
-    int i;
-    for (i=0; i<state.num_targets; i++) {
-        SetObjIdValue(i);
-        TargetingState state = get_targeting_state();
-        if (state.target_size > sMinObjSize) {
-            draw_dot(state.target_loc.x, state.target_loc.y, COLOUR_BLUE);
-        }
-    }
+    draw_debug_dots();
+
+    //video_set_input_frame(0);
     video_set_input_enabled(1);
 }
 
@@ -479,7 +473,7 @@ static void SetSizeThreshold(void) {
 
     consume_uart_arg("size threshold:", buf, 50);
     if (get_int_from_string(buf, &result)) {
-        sMinObjSize = result;
+        setMinObjSize(result);
     } else {
         xil_printf("Not a valid integer: %s\r\n", buf);
     }
@@ -522,10 +516,10 @@ static void SetObjId(void) {
 }
 
 void initialSetup(void) {
-    SetFlood1ThresholdValue(2);
-    SetFlood2ThresholdValue(7);
-    SetSobelThresholdValue(125);
-    SetRedThresholdValue(15);
+    SetFlood1ThresholdValue(8);
+    SetFlood2ThresholdValue(4);
+    SetSobelThresholdValue(95);
+    SetRedThresholdValue(35);
 }
 
 
@@ -856,24 +850,10 @@ static void AutoMainLoop(void) {
         int target_y = state.target_loc.y;
         u32 target_size = state.target_size;
 
-        int i;
-        for (i=1; i<state.num_targets; i++) {
-            SetObjIdValue(i);
-            state = get_targeting_state();
-            if (target_size < state.target_size &&
-                    state.target_loc.x > 200  &&
-                    state.target_loc.x < 1080 &&
-                    state.target_loc.y > 20   &&
-                    state.target_loc.y < 700) { // TODO: remove hack
-                target_x = state.target_loc.x;
-                target_y = state.target_loc.y;
-                target_size = state.target_size;
-            }
-        }
-
         draw_dot(target_x, target_y, COLOUR_GREEN);
-        xil_printf("Targeting state: Laser = (%d,%d); Obj = (%d, %d) [sz=%d]\n\r",
-                        state.laser.x, state.laser.y, target_x, target_y, target_size);
+        xil_printf(
+                "Targeting state: Laser = (%d,%d); Obj = (%d, %d) [sz=%d]\n\r",
+                state.laser.x, state.laser.y, target_x, target_y, target_size);
 
         // Get the diffs in both dimensions.
         //x_diff = X_MIDDLE;
@@ -885,17 +865,18 @@ static void AutoMainLoop(void) {
         x_adj = (x_diff > 0) ? x_diff : -x_diff;
         x_adj /= 16;
 
-        if (x_adj > 10) {
-            x_adj = 10;
+        int MAX_ANGLE = 10;
+        if (x_adj > MAX_ANGLE) {
+            x_adj = MAX_ANGLE;
         } else if (x_adj == 0 && x_diff != 0) {
             x_adj = 1;
         }
 
         y_adj = (y_diff > 0) ? y_diff : -y_diff;
-        y_adj /= 8;
+        y_adj /= 16;
 
-        if (y_adj > 10) {
-            y_adj = 10;
+        if (y_adj > MAX_ANGLE) {
+            y_adj = MAX_ANGLE;
         } else if (y_adj == 0 && y_diff != 0) {
             y_adj = 1;
         }
