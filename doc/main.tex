@@ -74,6 +74,12 @@
 \section{Register list}\label{register-list}
 
 \begin{longtable}[c]{@{}lll@{}}
+\caption{Table of AXI registers. `w' indicates read and write register,
+`r' indicates read only register.}\tabularnewline
+\toprule
+address & r/w & description\tabularnewline
+\midrule
+\endfirsthead
 \toprule
 address & r/w & description\tabularnewline
 \midrule
@@ -157,5 +163,49 @@ i & mode\tabularnewline
 6 & laser\tabularnewline
 \bottomrule
 \end{longtable}
+
+\section{Moment calculations}\label{moment-calculations}
+
+\subsection{Translational invariants}\label{translational-invariants}
+
+\[
+u_{ij} = \sum_x \sum_y (x - \bar{x}) ^ i (y - \bar{y}) ^ j p_{ij}
+\]
+
+\subsection{Scale invariants}\label{scale-invariants}
+
+\[
+n_{ij} = \frac{u_{ij}}{u_{00} ^ {1 + \frac{i + j}{2}}}
+\]
+
+\subsection{Rotational invariants}\label{rotational-invariants}
+
+\[
+\begin{aligned}
+I_0 &= n_{20} + n_{02} \\
+I_1 &= (n_{20} - n_{02}) ^ 2 + 4 n_{11}^2 \\
+I_2 &= (n_{30} - 3 n_{12}) ^ 2 + (3 n_{21} - n_{03}) ^ 2 \\
+I_3 &= (n_{30} + n_{12}) ^ 2 + (n_{32} + n_{03}) ^ 2 \\
+I_4 &= (n_{30} - 3 n_{12}) (n_{30} + n_{12})
+        \left((n_{30} + n_{12}) ^ 2 - 3 (n_{21} + n_{03}) ^ 2\right) \\
+        &+ (3 n_{21} - n_{03}) (n_{21} + n_{03})
+        \left(3 (n_{30} + n_{12}) ^ 2 - (n_{21} + n_{03}) ^ 2\right) \\
+I_5 &= (n_{20} - n_{02})
+        \left((n_{30} + n_{12}) ^ 2 - (n_{21} + n_{03}) ^ 2\right) \\
+        &+ 4 n_{11} (n_{30} + n_{12}) (n_{21} + n_{03}) \\
+I_6 &= (3 n_{21} - n_{03}) (n_{30} + n_{12})
+        \left((n_{30} + n_{12}) ^ 2 - 3 (n_{21} + n_{03}) ^ 2 \right) \\
+        &- (n_{30} - 3 n_{12}) (n_{21} + n_{03})
+        \left(3 (n_{30} + n_{12}) ^ 2 - (n_{21} + n_{03}) ^ 2 \right)
+\end{aligned}
+\]
+
+\newpage
+
+\subsection{Comparison}\label{comparison}
+
+\[
+x = \sum_{i=0}^5 \frac{(I_i - I^\prime_i) ^ 2}{I_i I^\prime_i}
+\]
 
 \end{document}
