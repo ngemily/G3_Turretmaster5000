@@ -1,0 +1,161 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+    \usepackage{xltxtra,xunicode}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex]{hyperref}
+\else
+  \usepackage[unicode=true]{hyperref}
+\fi
+\usepackage[usenames,dvipsnames]{color}
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={},
+            pdftitle={TurretMaster5000 Docs},
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            linkcolor=magenta,
+            pdfborder={0 0 0}}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{longtable,booktabs}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+
+\title{TurretMaster5000 Docs}
+\date{}
+\usepackage{fullpage}
+\usepackage{bytefield}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[section]{placeins}
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+\begin{document}
+\maketitle
+
+\section{Register list}\label{register-list}
+
+\begin{longtable}[c]{@{}lll@{}}
+\toprule
+address & r/w & description\tabularnewline
+\midrule
+\endhead
+5'h00 & r & obj\_m11\tabularnewline
+5'h01 & r & obj\_m12\tabularnewline
+5'h02 & r & obj\_m21\tabularnewline
+5'h03 & r & rx\_read\_pointer\tabularnewline
+5'h04 & r & tx\_write\_pointer\tabularnewline
+5'h05 & r & tx\_read\_pointer\tabularnewline
+5'h06 & r & rx\_fifo\_track\tabularnewline
+5'h07 & r & tx\_fifo\_track\tabularnewline
+5'h08 & r & mm2s\_tready\tabularnewline
+5'h09 & r & mm2s\_tvalid\tabularnewline
+5'h0A & r & s2mm\_tvalid\tabularnewline
+5'h0B & r & s2mm\_tready\tabularnewline
+5'h0C & w & ctrl\_reg1\tabularnewline
+5'h0D & w & frame\_resetn\tabularnewline
+5'h0E & r & laser\_xy\tabularnewline
+5'h0F & w & ctrl\_reg2\tabularnewline
+5'h10 & r & num\_labels\tabularnewline
+5'h11 & r & obj\_area\tabularnewline
+5'h12 & r & obj\_x\tabularnewline
+5'h13 & r & obj\_y\tabularnewline
+5'h14 & r & obj\_m20\tabularnewline
+5'h15 & r & obj\_m02\tabularnewline
+5'h16 & r & obj\_m30\tabularnewline
+5'h17 & r & obj\_m03\tabularnewline
+\bottomrule
+\end{longtable}
+
+\begin{figure}
+    \centering
+
+    \begin{subfigure}{\textwidth}
+        \centering
+        \begin{bytefield}[endianness=big]{32}
+            \bitheader{31, 23, 15, 7, 0} \\
+            \bitbox{8}{flood threshold} 
+            & \bitbox{8}{red threshold}
+            & \bitbox{8}{sobel threshold}
+            & \bitbox{8}{output mode}
+            \\
+        \end{bytefield}
+        \caption{Control register 1.}
+    \end{subfigure}
+
+    \par\bigskip
+    
+    \begin{subfigure}{\textwidth}
+        \centering
+        \begin{bytefield}[endianness=big]{32}
+            \bitheader{31, 23, 15, 11, 0} \\
+            \bitbox{8}{flood 2 threshold} 
+            & \bitbox{8}{input only}
+            & \bitbox{4}{unused}
+            & \bitbox{12}{object id}
+            \\
+        \end{bytefield}
+        \caption{Control register 2.}
+    \end{subfigure}
+
+    \caption{Control register layout.}
+\end{figure}
+
+\section{Mode enums}\label{mode-enums}
+
+\begin{longtable}[c]{@{}ll@{}}
+\toprule
+i & mode\tabularnewline
+\midrule
+\endhead
+0 & pass\tabularnewline
+1 & gray\tabularnewline
+2 & sobel\tabularnewline
+3 & thresh\tabularnewline
+7 & flood1\tabularnewline
+8 & flood2\tabularnewline
+4 & cc\tabularnewline
+5 & color\tabularnewline
+6 & laser\tabularnewline
+\bottomrule
+\end{longtable}
+
+\end{document}
