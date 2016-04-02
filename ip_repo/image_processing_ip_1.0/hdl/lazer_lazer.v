@@ -123,14 +123,15 @@ module r_minus_gb_threshold (
     wire [7:0] B = pixel[15:8];
     wire [7:0] R = pixel[23:16];
     //wire [7:0] BG_MAX = (B > G) ? B : G;
-    wire [7:0] sum = (G + B + R) >> 2;
+    wire [9:0] sum = G + B + R;
+    wire [7:0] sum_truncated = sum[9:2];
     //wire [7:0] d;
     
     //assign d = (R > BG_MAX) ? (R - BG_MAX) : 0;
     
-    assign q = (sum > threshold) ? 1 : 0;
+    assign q = (sum_truncated > threshold) ? 1 : 0;
 
-    assign debug = (sum > threshold) ? {3{sum}} : {8'b0, 8'b0, 8'b0};
+    assign debug = (q) ? {3{sum_truncated}} : {8'b0, 8'b0, 8'b0};
 endmodule
     
     
