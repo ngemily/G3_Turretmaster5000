@@ -67,6 +67,58 @@ void generate_debug_target(int x, int y) {
     dbgTargetY = y;
 }
 
+// Hard coded to draw on frame 1
+#define _TARG_FRAME_STRIDE 3840
+#define _TARG_FRAME_SIZE   (_TARG_FRAME_STRIDE*720)
+static inline void set_pixel(int col, int row, colour_t colour) {
+    int stride = _TARG_FRAME_STRIDE;
+    u8 *frame  = ((u8 *) FRAMES_BASE_ADDR) + _TARG_FRAME_SIZE;
+    *(frame + row*stride + col*3)     = colour.green;
+    *(frame + row*stride + col*3 + 1) = colour.blue;
+    *(frame + row*stride + col*3 + 2) = colour.red;
+}
+
+static void draw_bmp(int bmp, colour_t colour) {
+    int x, y, shift = (BITMAP_WIDTH*BITMAP_HEIGHT);
+    for (y=0; y<BITMAP_HEIGHT; y++) {
+        for (x=0; x<BITMAP_WIDTH; x++) {
+            shift--;
+            if ((1<<shift) & bmp) {
+                set_pixel(x, y, colour);
+            }
+        }
+    }
+}
+
+XStatus draw_num(int num, colour_t colour) {
+    if (num >= (sizeof(bitmaps)/4)) {
+        return XST_FAILURE;
+    }
+
+    draw_bmp(hex_bitmaps[num], colour);
+    return XST_SUCCESS;
+}
+
+// Hard coded to draw on frame 1
+XStatus draw_dot(int x, int y, colour_t colour) {
+    int stride = VMODE_1280x720.width*3;
+    u8 *frame = ((u8 *) FRAMES_BASE_ADDR) + (stride*VMODE_1280x720.height);
+    int xo, yo;
+    for (yo=-1; yo<=1; yo++) {
+        for (xo=-1; xo<=1; xo++) {
+            set_pixel(y+yo, x+xo, colour);
+        }
+    }
+    for (xo=-3; xo<=3; xo++) {
+        set_pixel(y, x+xo, colour);
+    }
+    for (yo=-3; yo<=3; yo++) {
+        set_pixel(y+yo, x, colour);
+    }
+
+   return XST_SUCCESS;
+}
+
 void draw_debug_dots(void) {
     int i;
     draw_dot(targetingIp->laserLocation.x, targetingIp->laserLocation.y, COLOUR_RED);
@@ -142,33 +194,6 @@ void print_ip_info(void) {
 
 void SetOutputMode(TargettingControlMode mode) {
     targetingIp->mode = mode;
-}
-
-
-// Hard coded to draw on frame 1
-XStatus draw_dot(int x, int y, colour_t colour) {
-    int stride = VMODE_1280x720.width*3;
-    u8 *frame = ((u8 *) FRAMES_BASE_ADDR) + (stride*VMODE_1280x720.height);
-    int xo, yo;
-    for (yo=-1; yo<=1; yo++) {
-        for (xo=-1; xo<=1; xo++) {
-            *(frame + (y+yo)*stride + (x+xo)*3)     = colour.green;
-            *(frame + (y+yo)*stride + (x+xo)*3 + 1) = colour.blue;
-            *(frame + (y+yo)*stride + (x+xo)*3 + 2) = colour.red;
-        }
-    }
-    for (xo=-3; xo<=3; xo++) {
-        *(frame + (y)*stride + (x+xo)*3)     = colour.green;;
-        *(frame + (y)*stride + (x+xo)*3 + 1) = colour.blue;
-        *(frame + (y)*stride + (x+xo)*3 + 2) = colour.red;
-    }
-    for (yo=-3; yo<=3; yo++) {
-        *(frame + (y+yo)*stride + (x)*3)     = colour.green;;
-        *(frame + (y+yo)*stride + (x)*3 + 1) = colour.blue;
-        *(frame + (y+yo)*stride + (x)*3 + 2) = colour.red;
-    }
-
-   return XST_SUCCESS;
 }
 
 void SetFlood1ThresholdValue(int threshold) {
