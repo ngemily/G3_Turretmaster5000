@@ -627,9 +627,9 @@ int main(void)
     register_uart_response("laseroff",        LaserOff);
 
     register_uart_response("redthresh",        SetRedThreshold);
-    register_uart_response("setsobelthresh",   SetSobelThreshold);
-    register_uart_response("setflood1thresh",   SetFlood1Threshold);
-    register_uart_response("setflood2thresh",   SetFlood2Threshold);
+    register_uart_response("sobelthresh",   SetSobelThreshold);
+    register_uart_response("f1thresh",   SetFlood1Threshold);
+    register_uart_response("f2thresh",   SetFlood2Threshold);
     register_uart_response("setminsize",   SetSizeThreshold);
 
 
@@ -850,7 +850,6 @@ static void AutoMainLoop(void) {
         int target_y = state.target_loc.y;
         u32 target_size = state.target_size;
 
-        draw_dot(target_x, target_y, COLOUR_GREEN);
         xil_printf(
                 "Targeting state: Laser = (%d,%d); Obj = (%d, %d) [sz=%d]\n\r",
                 state.laser.x, state.laser.y, target_x, target_y, target_size);

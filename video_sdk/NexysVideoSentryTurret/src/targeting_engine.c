@@ -10,6 +10,7 @@
 
 #include "targeting/vdma.h"
 #include "targeting/targeting_hw.h"
+#include "targeting/bitmaps.h"
 #include "display_ctrl/vga_modes.h"
 
 #include "targeting_engine.h"
@@ -78,10 +79,10 @@ static inline void set_pixel(int col, int row, colour_t colour) {
     *(frame + row*stride + col*3 + 2) = colour.red;
 }
 
-static void draw_bmp(int bmp, colour_t colour) {
+static void draw_bmp(int bmp, int col, int row, colour_t colour) {
     int x, y, shift = (BITMAP_WIDTH*BITMAP_HEIGHT);
-    for (y=0; y<BITMAP_HEIGHT; y++) {
-        for (x=0; x<BITMAP_WIDTH; x++) {
+    for (y=row; y<(row + BITMAP_HEIGHT); y++) {
+        for (x=col; x<(col + BITMAP_WIDTH); x++) {
             shift--;
             if ((1<<shift) & bmp) {
                 set_pixel(x, y, colour);
@@ -90,30 +91,29 @@ static void draw_bmp(int bmp, colour_t colour) {
     }
 }
 
-XStatus draw_num(int num, colour_t colour) {
-    if (num >= (sizeof(bitmaps)/4)) {
-        return XST_FAILURE;
+XStatus draw_num(u32 num, int x, int y, colour_t colour) {
+    int i;
+    for (i=0; i<8; i++) {
+        int hex = (num>>((7-i)*4)) & 0xF;
+        draw_bmp(hex_bitmaps[hex], (x + ((BITMAP_WIDTH+1)*i)), y, colour);
     }
 
-    draw_bmp(hex_bitmaps[num], colour);
     return XST_SUCCESS;
 }
 
 // Hard coded to draw on frame 1
 XStatus draw_dot(int x, int y, colour_t colour) {
-    int stride = VMODE_1280x720.width*3;
-    u8 *frame = ((u8 *) FRAMES_BASE_ADDR) + (stride*VMODE_1280x720.height);
     int xo, yo;
     for (yo=-1; yo<=1; yo++) {
         for (xo=-1; xo<=1; xo++) {
-            set_pixel(y+yo, x+xo, colour);
+            set_pixel(x+xo, y+yo, colour);
         }
     }
     for (xo=-3; xo<=3; xo++) {
-        set_pixel(y, x+xo, colour);
+        set_pixel(x+xo, y, colour);
     }
     for (yo=-3; yo<=3; yo++) {
-        set_pixel(y+yo, x, colour);
+        set_pixel(x, y+yo, colour);
     }
 
    return XST_SUCCESS;
@@ -128,6 +128,7 @@ void draw_debug_dots(void) {
             u32 x = targetingIp->obj_x / targetingIp->obj_area;
             u32 y = targetingIp->obj_y / targetingIp->obj_area;
             draw_dot(x, y, COLOUR_BLUE);
+            draw_num(targetingIp->obj_area, x+4, y+4, COLOUR_BLUE);
         }
     }
 }
@@ -154,6 +155,10 @@ TargetingState get_targeting_state(void) {
     state.target_loc.x = targetingIp->obj_x / targetingIp->obj_area;
     state.target_loc.y = targetingIp->obj_y / targetingIp->obj_area;
     state.target_size = targetingIp->obj_area;
+
+    draw_dot(state.target_loc.x, state.target_loc.y, COLOUR_GREEN);
+    draw_num(targetingIp->obj_area+4, state.target_loc.x+4, state.target_loc.y, COLOUR_GREEN);
+
     return state;
 }
 
