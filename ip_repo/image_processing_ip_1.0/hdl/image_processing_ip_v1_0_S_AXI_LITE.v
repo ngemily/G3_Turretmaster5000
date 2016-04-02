@@ -651,8 +651,8 @@
     wire core_en;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl       = slv_reg12;
     wire [C_S_AXI_DATA_WIDTH-1:0] ctrl2      = slv_reg15;
-    reg [15:0] pixel_row;
-    reg [15:0] pixel_col;
+    reg [`LOC_SIZE:0] pixel_row;
+    reg [`LOC_SIZE:0] pixel_col;
     wire [31:0] laser_xy;
     wire [`LBL_WIDTH - 1:0] num_labels;
     wire [`LOC_SIZE - 1:0] obj_area;
