@@ -62,10 +62,15 @@
 #define GUN_PATH "gun.raw"
 #define PORTAL_GUN_PATH "portal.raw"
 #define TARGET_PATH "target.raw"
+#define POS_PATH "pos.raw"
+#define NEG_PATH "neg.raw"
 
 #define FRAME_SIZE_BYTES (3 * 1280 * 720)
 #define HEMAN_FILE_PATH "heman.bin"
 #define LEMONGRAB_FILE_PATH "lemon.bin"
+
+#define DEFAULT_X_POS (0)
+#define DEFAULT_Y_POS (30)
 
 
 typedef enum {

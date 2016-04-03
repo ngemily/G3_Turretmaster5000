@@ -276,6 +276,8 @@ void loadSounds(void) {
     loadFileIntoMemory(FILE_ID_MACHINE_GUN, GUN_PATH);
     loadFileIntoMemory(FILE_ID_PORTAL_GUN, PORTAL_GUN_PATH);
     loadFileIntoMemory(FILE_ID_TARGET_ACQUIRED, TARGET_PATH);
+    loadFileIntoMemory(FILE_ID_BUTTON_POSITIVE, POS_PATH);
+    loadFileIntoMemory(FILE_ID_BUTTON_NEGATIVE, NEG_PATH);
     //loadSongIntoMemory(SOUND_ID_STILL_ALIVE, SONG_PATH);
 }
 
@@ -324,6 +326,27 @@ void playTargetAcquired(void) {
         xil_printf("Target Acquired not loaded yet!\r\n");
     }
 }
+
+
+void playPos(void) {
+    if (sSdFileBoard[FILE_ID_BUTTON_POSITIVE].loaded) {
+        play_audio(sSdFileBoard[FILE_ID_BUTTON_POSITIVE].baseAddr,
+                sSdFileBoard[FILE_ID_BUTTON_POSITIVE].length);
+    } else {
+        xil_printf("pos button not loaded yet!\r\n");
+    }
+}
+
+
+void playNeg(void) {
+    if (sSdFileBoard[FILE_ID_BUTTON_NEGATIVE].loaded) {
+        play_audio(sSdFileBoard[FILE_ID_BUTTON_NEGATIVE].baseAddr,
+                sSdFileBoard[FILE_ID_BUTTON_NEGATIVE].length);
+    } else {
+        xil_printf("neg button not loaded yet!\r\n");
+    }
+}
+
 
 static void setDummyTarget(void) {
     int x, y;
@@ -812,7 +835,7 @@ void ButtonIsr(void *InstancePtr) {
 
     if (continueTest && sLoopSelect == MANUAL_MODE) {
         if (sButtonState & BUTTON_CENTER) {
-            playGunSound();
+            playPortalGunSound();
         }
     }
 }
@@ -834,8 +857,8 @@ static void AutoMainLoop(void) {
     TurnOnLaser();
     EnablePanServo();
     EnableTiltServo();
-    SetTiltAngle(0);
-    SetPanAngle(0);
+    SetTiltAngle(DEFAULT_X_POS);
+    SetPanAngle(DEFAULT_Y_POS);
 
     int acquired = 0;
     int sleep_interval;
@@ -856,8 +879,9 @@ static void AutoMainLoop(void) {
                 state.laser.x, state.laser.y, target_x, target_y, target_size);
 
         if (state.laser.x == 0 && state.laser.y == 0) {
-            SetPanAngle(0);
-            SetTiltAngle(0);
+            SetPanAngle(DEFAULT_X_POS);
+            SetTiltAngle(DEFAULT_Y_POS);
+            playNeg();
             goto loop_sleep;
         }
 
@@ -911,9 +935,9 @@ static void AutoMainLoop(void) {
         if (x_diff <= LASER_TOLERANCE && x_diff >= -LASER_TOLERANCE &&
                 y_diff <= LASER_TOLERANCE && y_diff >= -LASER_TOLERANCE) {
             if (acquired) {
-                playGunSound();
+                playPortalGunSound();
             } else {
-                playTargetAcquired();
+                playPos();
                 acquired = 1;
             }
         } else {
