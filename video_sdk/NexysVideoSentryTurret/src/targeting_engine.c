@@ -130,13 +130,13 @@ XStatus draw_dot(int x, int y, colour_t colour) {
 }
 
 void get_moments(unsigned long long I[4]) {
-    unsigned long long m11 = (unsigned long long) targetingIp->obj_m11;
-    unsigned long long m12 = (unsigned long long) targetingIp->obj_m12;
-    unsigned long long m21 = (unsigned long long) targetingIp->obj_m21;
-    unsigned long long m02 = (unsigned long long) targetingIp->obj_m02;
-    unsigned long long m20 = (unsigned long long) targetingIp->obj_m20;
-    unsigned long long m03 = (unsigned long long) targetingIp->obj_m03;
-    unsigned long long m30 = (unsigned long long) targetingIp->obj_m30;
+    unsigned long long m11 = ((unsigned long long) targetingIp->obj_m11)>>8;
+    unsigned long long m12 = ((unsigned long long) targetingIp->obj_m12)>>8;
+    unsigned long long m21 = ((unsigned long long) targetingIp->obj_m21)>>8;
+    unsigned long long m02 = ((unsigned long long) targetingIp->obj_m02)>>8;
+    unsigned long long m20 = ((unsigned long long) targetingIp->obj_m20)>>8;
+    unsigned long long m03 = ((unsigned long long) targetingIp->obj_m03)>>8;
+    unsigned long long m30 = ((unsigned long long) targetingIp->obj_m30)>>8;
 
     I[0] = m20 + m02;
     I[1] = (m20 - m02)*(m20 - m02) + 4*(m11*m11);
