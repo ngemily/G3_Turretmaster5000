@@ -617,6 +617,8 @@ int main(void)
     register_uart_response("gun", playGunSound);
     register_uart_response("portal_gun", playPortalGunSound);
     register_uart_response("target", playTargetAcquired);
+    register_uart_response("playpos", playPos);
+    register_uart_response("playneg", playNeg);
 
     register_uart_response("manual", EnterManualMainLoop);
     register_uart_response("auto", EnterAutomaticMainLoop);
