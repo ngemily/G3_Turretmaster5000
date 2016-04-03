@@ -101,6 +101,16 @@ XStatus draw_num(u32 num, int x, int y, colour_t colour) {
     return XST_SUCCESS;
 }
 
+XStatus draw_num64(unsigned long long num, int x, int y, colour_t colour) {
+    int i;
+    for (i=0; i<16; i++) {
+        int hex = (num>>((15-i)*4)) & 0xF;
+        draw_bmp(hex_bitmaps[hex], (x + ((BITMAP_WIDTH+1)*i)), y, colour);
+    }
+
+    return XST_SUCCESS;
+}
+
 // Hard coded to draw on frame 1
 XStatus draw_dot(int x, int y, colour_t colour) {
     int xo, yo;
@@ -119,6 +129,25 @@ XStatus draw_dot(int x, int y, colour_t colour) {
    return XST_SUCCESS;
 }
 
+void get_moments(unsigned long long I[4]) {
+    unsigned long long m11 = (unsigned long long) targetingIp->obj_m11;
+    unsigned long long m12 = (unsigned long long) targetingIp->obj_m12;
+    unsigned long long m21 = (unsigned long long) targetingIp->obj_m21;
+    unsigned long long m02 = (unsigned long long) targetingIp->obj_m02;
+    unsigned long long m20 = (unsigned long long) targetingIp->obj_m20;
+    unsigned long long m03 = (unsigned long long) targetingIp->obj_m03;
+    unsigned long long m30 = (unsigned long long) targetingIp->obj_m30;
+
+    I[0] = m20 + m02;
+    I[1] = (m20 - m02)*(m20 - m02) + 4*(m11*m11);
+    I[2] = (m30 - 3*m12)*(m30 - 3*m12) + (3*m21 - m03)*(3*m21 - m03);
+    I[3] = (m30 + m12)*(m30 + m12) + (m21 + m03)*(m21 + m03);
+    I[4] = (m30 - 3*m12)*(m30 + m12)*((m30 + m12)*(m30 + m12) - 3*(m21 + m03)*(m21 + m03)) +
+            (3*m21 - m03)*(m21 + m03)*(3*(m30 + m12)*(m30 + m12) - (m21 + m03)*(m21 + m03));
+    I[5] = (m20 - m02)*((m30 + m12)*(m30 + m12) - (m21 + m03)*(m21 + m03)) +
+            4*m11*(m30 + m12)*(m21 + m03);
+}
+
 void draw_debug_dots(void) {
     int i;
     draw_dot(targetingIp->laserLocation.x, targetingIp->laserLocation.y, COLOUR_RED);
@@ -129,6 +158,12 @@ void draw_debug_dots(void) {
             u32 y = targetingIp->obj_y / targetingIp->obj_area;
             draw_dot(x, y, COLOUR_BLUE);
             draw_num(targetingIp->obj_area, x+4, y+4, COLOUR_BLUE);
+            unsigned long long moments[6];
+            get_moments(moments);
+            int j;
+            for (j=0; j<6; j++) {
+                draw_num64(moments[j], x+4, (y+4) + (BITMAP_HEIGHT+1)*(j+1), COLOUR_BLUE);
+            }
         }
     }
 }
@@ -139,14 +174,16 @@ TargetingState get_targeting_state(void) {
     state.laser.x  = targetingIp->laserLocation.x;
     state.laser.y  = targetingIp->laserLocation.y;
 
-    targetingIp->obj_id = 1;
-    u32 max_size = targetingIp->obj_area;
+    targetingIp->obj_id = 0;
+    u32 max_size = 0;
     int target_idx = 1;
     int i;
-    for (i=2; i<targetingIp->num_objs; i++) {
+    for (i=1; i<targetingIp->num_objs; i++) {
         targetingIp->obj_id = i;
         if (targetingIp->obj_area > max_size &&
-                targetingIp->obj_area < MAX_OBJECT_SIZE) {
+                targetingIp->obj_area < MAX_OBJECT_SIZE &&
+                targetingIp->obj_x / targetingIp->obj_area > 200 &&
+                targetingIp->obj_x / targetingIp->obj_area < 1080) {
             max_size = targetingIp->obj_area;
             target_idx = i;
         }
@@ -157,7 +194,7 @@ TargetingState get_targeting_state(void) {
     state.target_size = targetingIp->obj_area;
 
     draw_dot(state.target_loc.x, state.target_loc.y, COLOUR_GREEN);
-    draw_num(targetingIp->obj_area+4, state.target_loc.x+4, state.target_loc.y, COLOUR_GREEN);
+    draw_num(targetingIp->obj_area+4, state.target_loc.x+4, state.target_loc.y + 4, COLOUR_GREEN);
 
     return state;
 }
@@ -172,9 +209,6 @@ void print_ip_info(void) {
     XAxiVdma_DmaRegisterDump(vdmaPtr, XAXIVDMA_WRITE);
     volatile TargetingIPStatus *ipStatus = (TargetingIPStatus *) IMAGE_PROC_BASE_ADDR;
 
-    xil_printf("  rx_fsm_state    = %08x\n\r", ipStatus->rx_fsm_state);
-    xil_printf("  tx_fsm_state    = %08x\n\r", ipStatus->tx_fsm_state);
-    xil_printf("  rx_write_ptr    = %08x\n\r", ipStatus->rx_write_ptr);
     xil_printf("  rx_read_ptr     = %08x\n\r", ipStatus->rx_read_ptr);
     xil_printf("  tx_write_ptr    = %08x\n\r", ipStatus->tx_write_ptr);
     xil_printf("  tx_read_ptr     = %08x\n\r", ipStatus->tx_read_ptr);
@@ -194,6 +228,14 @@ void print_ip_info(void) {
     xil_printf("  num_labels      = %08x\n\r", ipStatus->num_objs);
     xil_printf("  obj_id          = %08x\n\r", ipStatus->obj_id);
     xil_printf("  obj_loc         = (%d, %d)\n\r", ipStatus->obj_x / ipStatus->obj_area, ipStatus->obj_y / ipStatus->obj_area);
+    xil_printf("  obj_m02         = %08x\n\r", ipStatus->obj_m02);
+    xil_printf("  obj_m20         = %08x\n\r", ipStatus->obj_m20);
+    xil_printf("  obj_m03         = %08x\n\r", ipStatus->obj_m03);
+    xil_printf("  obj_m30         = %08x\n\r", ipStatus->obj_m30);
+    xil_printf("  obj_m02         = %08x\n\r", ipStatus->obj_m02);
+    xil_printf("  obj_m11         = %08x\n\r", ipStatus->obj_m11);
+    xil_printf("  obj_m12         = %08x\n\r", ipStatus->obj_m12);
+    xil_printf("  obj_m21         = %08x\n\r", ipStatus->obj_m21);
 }
 
 

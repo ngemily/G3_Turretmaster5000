@@ -838,6 +838,7 @@ static void AutoMainLoop(void) {
     SetPanAngle(0);
 
     int acquired = 0;
+    int sleep_interval;
 
     continueTest = true;
     xil_printf("Entering auto mode.\r\n");
@@ -853,6 +854,12 @@ static void AutoMainLoop(void) {
         xil_printf(
                 "Targeting state: Laser = (%d,%d); Obj = (%d, %d) [sz=%d]\n\r",
                 state.laser.x, state.laser.y, target_x, target_y, target_size);
+
+        if (state.laser.x == 0 && state.laser.y == 0) {
+            SetPanAngle(0);
+            SetTiltAngle(0);
+            goto loop_sleep;
+        }
 
         // Get the diffs in both dimensions.
         //x_diff = X_MIDDLE;
@@ -913,7 +920,8 @@ static void AutoMainLoop(void) {
             acquired = 0;
         }
 
-        int sleep_interval = sDebugOutputEnabled ? 3000 : 500;
+loop_sleep:
+        sleep_interval = sDebugOutputEnabled ? 3000 : 500;
         MB_Sleep(sleep_interval);
     }
     SetTiltAngle(0);

@@ -22,9 +22,9 @@ typedef struct {
 } TargetObjectData;
 
 typedef struct {
-    u32 rx_fsm_state;
-    u32 tx_fsm_state;
-    u32 rx_write_ptr;
+    u32 obj_m11;
+    u32 obj_m12;
+    u32 obj_m21;
     u32 rx_read_ptr;
     u32 tx_write_ptr;
     u32 tx_read_ptr;
@@ -47,6 +47,10 @@ typedef struct {
     u32 obj_area;
     u32 obj_x;
     u32 obj_y;
+    u32 obj_m20;
+    u32 obj_m02;
+    u32 obj_m30;
+    u32 obj_m03;
     TargetObjectData objects[MAX_NUM_TARGETING_OBJECTS];
 } TargetingIPStatus;
 
