@@ -48,7 +48,7 @@ indicates read only register.
         \centering
         \begin{bytefield}[endianness=big]{32}
             \bitheader{31, 23, 15, 7, 0} \\
-            \bitbox{8}{flood threshold} 
+            \bitbox{8}{flood threshold}
             & \bitbox{8}{red threshold}
             & \bitbox{8}{sobel threshold}
             & \bitbox{8}{output mode}
@@ -58,12 +58,12 @@ indicates read only register.
     \end{subfigure}
 
     \par\bigskip
-    
+
     \begin{subfigure}{\textwidth}
         \centering
         \begin{bytefield}[endianness=big]{32}
             \bitheader{31, 23, 15, 11, 0} \\
-            \bitbox{8}{flood 2 threshold} 
+            \bitbox{8}{flood 2 threshold}
             & \bitbox{8}{input only}
             & \bitbox{4}{unused}
             & \bitbox{12}{object id}
@@ -131,3 +131,175 @@ $$
 $$
 x = \sum_{i=0}^5 \frac{(I_i - I^\prime_i) ^ 2}{I_i I^\prime_i}
 $$
+
+# UART commands
+
+## Sound
+
+## IP Status
+`ipinfo`
+:   Read and display all memory mapped registers.
+
+## IP Control
+`setobjid`
+:   Controls which object the IP will output information about (location, area).
+
+## Frame buffer
+`df1`
+:   df1
+
+`df2`
+:   df2
+
+`df0`
+:   df0
+
+`vf1`
+:   vf1
+
+`vf2`
+:   vf2
+
+`vf0`
+:   vf0
+
+## SD card
+
+`lemon`
+:   lemon
+
+`heman`
+:   heman
+
+## IP modes
+
+These commands set the control signal to a mux at the IP output, to show each
+stage of image processing.
+
+`pass`
+:   Passthrough; show what the camera sees without any modifications.
+
+`gray`
+:   Grayscale.
+
+`sobel`
+:   Sobel edge detection.
+
+`thresh`
+:   Sobel passed through a threshold to get a binarized image.
+
+`label`
+:   Connected components label.
+
+`colour`
+:   Coloured connected components label.
+
+`laser`
+:   Laser detection; whatever objects the IP thinks is the laser.
+
+`flood1`
+:   First flooding stage.
+
+`flood2`
+:   Second flooding stage.
+
+## Thresholds
+
+`redthresh`
+:   redthresh
+
+`setsobelthresh`
+:   setsobelthresh
+
+`setflood1thresh`
+:   setflood1thresh
+
+`setflood2thresh`
+:   setflood2thresh
+
+`setminsize`
+:   setminsize
+
+
+## TODO uncategorized
+`test_args`
+:   test_args
+
+`ipouttoggle`
+:   ipouttoggle
+
+`dummytarget`
+:   dummytarget
+
+`laseron`
+:   laseron
+
+`laseroff`
+:   laseroff
+
+`test`
+:   test
+
+`record`
+:   record
+
+`play`
+:   play
+
+`kill`
+:   kill
+
+`exit`
+:   exit
+
+`dump`
+:   dump
+
+`lowlevel`
+:   lowlevel
+
+`highlevel`
+:   highlevel
+
+`lasertest`
+:   lasertest
+
+`motortest`
+:   motortest
+
+`stop`
+:   stop
+
+`load_sounds`
+:   load_sounds
+
+`load_images`
+:   load_images
+
+`still_alive`
+:   still_alive
+
+`gun`
+:   gun
+
+`portal_gun`
+:   portal_gun
+
+`target`
+:   target
+
+`manual`
+:   manual
+
+`auto`
+:   auto
+
+`passthrough`
+:   passthrough
+
+`runip`
+:   runip
+
+`videoinfo`
+:   videoinfo
+

@@ -118,7 +118,7 @@ address & r/w & description\tabularnewline
         \centering
         \begin{bytefield}[endianness=big]{32}
             \bitheader{31, 23, 15, 7, 0} \\
-            \bitbox{8}{flood threshold} 
+            \bitbox{8}{flood threshold}
             & \bitbox{8}{red threshold}
             & \bitbox{8}{sobel threshold}
             & \bitbox{8}{output mode}
@@ -128,12 +128,12 @@ address & r/w & description\tabularnewline
     \end{subfigure}
 
     \par\bigskip
-    
+
     \begin{subfigure}{\textwidth}
         \centering
         \begin{bytefield}[endianness=big]{32}
             \bitheader{31, 23, 15, 11, 0} \\
-            \bitbox{8}{flood 2 threshold} 
+            \bitbox{8}{flood 2 threshold}
             & \bitbox{8}{input only}
             & \bitbox{4}{unused}
             & \bitbox{12}{object id}
@@ -207,5 +207,157 @@ I_6 &= (3 n_{21} - n_{03}) (n_{30} + n_{12})
 \[
 x = \sum_{i=0}^5 \frac{(I_i - I^\prime_i) ^ 2}{I_i I^\prime_i}
 \]
+
+\section{UART commands}\label{uart-commands}
+
+\subsection{Sound}\label{sound}
+
+\subsection{IP Status}\label{ip-status}
+
+\begin{description}
+\tightlist
+\item[\texttt{ipinfo}]
+Read and display all memory mapped registers.
+\end{description}
+
+\subsection{IP Control}\label{ip-control}
+
+\begin{description}
+\tightlist
+\item[\texttt{setobjid}]
+Controls which object the IP will output information about (location,
+area).
+\end{description}
+
+\subsection{Frame buffer}\label{frame-buffer}
+
+\begin{description}
+\tightlist
+\item[\texttt{df1}]
+df1
+\item[\texttt{df2}]
+df2
+\item[\texttt{df0}]
+df0
+\item[\texttt{vf1}]
+vf1
+\item[\texttt{vf2}]
+vf2
+\item[\texttt{vf0}]
+vf0
+\end{description}
+
+\subsection{SD card}\label{sd-card}
+
+\begin{description}
+\tightlist
+\item[\texttt{lemon}]
+lemon
+\item[\texttt{heman}]
+heman
+\end{description}
+
+\subsection{IP modes}\label{ip-modes}
+
+These commands set the control signal to a mux at the IP output, to show
+each stage of image processing.
+
+\begin{description}
+\tightlist
+\item[\texttt{pass}]
+Passthrough; show what the camera sees without any modifications.
+\item[\texttt{gray}]
+Grayscale.
+\item[\texttt{sobel}]
+Sobel edge detection.
+\item[\texttt{thresh}]
+Sobel passed through a threshold to get a binarized image.
+\item[\texttt{label}]
+Connected components label.
+\item[\texttt{colour}]
+Coloured connected components label.
+\item[\texttt{laser}]
+Laser detection; whatever objects the IP thinks is the laser.
+\item[\texttt{flood1}]
+First flooding stage.
+\item[\texttt{flood2}]
+Second flooding stage.
+\end{description}
+
+\subsection{Thresholds}\label{thresholds}
+
+\begin{description}
+\tightlist
+\item[\texttt{redthresh}]
+redthresh
+\item[\texttt{setsobelthresh}]
+setsobelthresh
+\item[\texttt{setflood1thresh}]
+setflood1thresh
+\item[\texttt{setflood2thresh}]
+setflood2thresh
+\item[\texttt{setminsize}]
+setminsize
+\end{description}
+
+\subsection{TODO uncategorized}\label{todo-uncategorized}
+
+\begin{description}
+\tightlist
+\item[\texttt{test\_args}]
+test\_args
+\item[\texttt{ipouttoggle}]
+ipouttoggle
+\item[\texttt{dummytarget}]
+dummytarget
+\item[\texttt{laseron}]
+laseron
+\item[\texttt{laseroff}]
+laseroff
+\item[\texttt{test}]
+test
+\item[\texttt{record}]
+record
+\item[\texttt{play}]
+play
+\item[\texttt{kill}]
+kill
+\item[\texttt{exit}]
+exit
+\item[\texttt{dump}]
+dump
+\item[\texttt{lowlevel}]
+lowlevel
+\item[\texttt{highlevel}]
+highlevel
+\item[\texttt{lasertest}]
+lasertest
+\item[\texttt{motortest}]
+motortest
+\item[\texttt{stop}]
+stop
+\item[\texttt{load\_sounds}]
+load\_sounds
+\item[\texttt{load\_images}]
+load\_images
+\item[\texttt{still\_alive}]
+still\_alive
+\item[\texttt{gun}]
+gun
+\item[\texttt{portal\_gun}]
+portal\_gun
+\item[\texttt{target}]
+target
+\item[\texttt{manual}]
+manual
+\item[\texttt{auto}]
+auto
+\item[\texttt{passthrough}]
+passthrough
+\item[\texttt{runip}]
+runip
+\item[\texttt{videoinfo}]
+videoinfo
+\end{description}
 
 \end{document}
