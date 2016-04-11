@@ -22,22 +22,27 @@ source files, ensure that you run `git submodule init && git submodule update`
 after cloning.
 
 Steps to generate the project:
+
 1. Generate the vivado project by calling the project creation tcl script from
    within GIT_ROOT/video_design (create_project.tcl).
 
    `vivado -mode batch -source create_project.tcl`
+   
 2. Compile the project and export the hardware.
 
    `vivado -mode batch -source compile_project.tcl`
+   
 3. Launch the SDK.
 
    `vivado -mode batch -source launch_sdk.tcl`
+   
 4. Import the projects.
 
     In the SDK, click on `file>import`. Under the "general" directory, select
     "Existing Projects Into Workspace", then click next.  Set GIT_ROOT/video_sdk
     as the root directory, and import the "NexysVideoSentryTurret" and
     "turretmaster_bsp" projects.
+    
 5. Build the sources and program the board as per the tutorials.
 
 Directory Structure
